@@ -1,0 +1,10 @@
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+    import: optional:file:.env.local.dev[.properties]
+
+
+server:
+  address: 0.0.0.0
