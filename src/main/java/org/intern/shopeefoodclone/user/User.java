@@ -1,4 +1,4 @@
-package org.intern.shopeefoodclone.entity;
+package org.intern.shopeefoodclone.user;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
@@ -41,7 +41,6 @@ public class User {
     @Column(name = "password_hash", nullable = false, columnDefinition = "TEXT")
     private String passwordHash;
 
-    @NotBlank(message = "Role is required")
     @Size(max = 50)
     @Column(nullable = false, length = 50)
     private String role;

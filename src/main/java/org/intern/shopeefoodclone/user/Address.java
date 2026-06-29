@@ -1,4 +1,4 @@
-package org.intern.shopeefoodclone.entity;
+package org.intern.shopeefoodclone.user;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;

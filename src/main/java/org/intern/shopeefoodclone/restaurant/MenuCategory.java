@@ -1,4 +1,4 @@
-package org.intern.shopeefoodclone.entity;
+package org.intern.shopeefoodclone.restaurant;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
