@@ -17,7 +17,7 @@ import java.io.IOException;
 @Slf4j
 public class JwtAuthEntryPoint implements AuthenticationEntryPoint {
     @Override
-    public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException, ServletException {
+    public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException {
         log.error("ERROR: {}", authException.getMessage());
 
         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
