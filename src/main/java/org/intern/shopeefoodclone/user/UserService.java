@@ -2,6 +2,8 @@ package org.intern.shopeefoodclone.user;
 
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.intern.shopeefoodclone.shared.exception.AppException;
+import org.intern.shopeefoodclone.shared.exception.ErrorCode;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,15 +22,20 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    @Transactional(readOnly = true)
+
     public List<User> findAll() {
         return userRepository.findAll();
     }
 
-    @Transactional(readOnly = true)
+
     public User findById(UUID id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+    public User findByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND, "User not found with email: " + email));
     }
 
     @Transactional
