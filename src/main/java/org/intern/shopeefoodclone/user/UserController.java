@@ -18,7 +18,7 @@ public class UserController {
 
     @PostMapping
     public ResponseEntity<User> create(@RequestBody User user) {
-        return ResponseEntity.ok(userService.create(user));
+        return null;
     }
 
     @GetMapping

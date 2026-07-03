@@ -18,7 +18,6 @@ public class AsyncConfig {
 
     /**
      * Executor specialized for File Uploading (@Async("fileUploadExecutor")).
-     *
      * Why these settings?
      * - File uploads are memory-intensive and heavy on disk/network I/O (buffering file streams).
      * - We keep moderate concurrency (core=5, max=15) and a restricted queue (capacity=50)

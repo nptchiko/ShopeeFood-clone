@@ -10,7 +10,5 @@ public record OtpRequest(
         @Size(max = 50, message = "Email must be at most 50 characters")
         String email,
 
-        @NotBlank(message = "OTP is required")
-        @Size(min = 6, max = 6, message = "OTP must be exactly 6 characters")
         String otp
 ) {}

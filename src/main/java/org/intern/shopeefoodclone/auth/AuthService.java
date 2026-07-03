@@ -132,6 +132,12 @@ class AuthService {
     public AuthResponse verifyOtp(OtpRequest request) {
         String email = request.email();
         String otp = request.otp();
+
+
+        if (otp == null || otp.isBlank()) {
+            throw new AppException(ErrorCode.INVALID_OTP, "OTP is missing");
+        }
+
         User user = userService.findByEmail(email); // Check if user exists
         userOtpService.verifyRegistrationOtp(email, otp);
 
