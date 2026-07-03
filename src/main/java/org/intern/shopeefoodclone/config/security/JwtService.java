@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.intern.shopeefoodclone.shared.constant.DATE;
 import org.intern.shopeefoodclone.shared.exception.AppException;
 import org.intern.shopeefoodclone.shared.exception.ErrorCode;
+import org.intern.shopeefoodclone.infras.cache.CacheService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -20,12 +21,12 @@ import java.util.UUID;
 @Service
 public class JwtService {
 
-    private final RedisService redisService;
+    private final CacheService cacheService;
     @Value("${jwt.secret}")
     String jwtSecret;
 
-    public JwtService(RedisService redisService) {
-        this.redisService = redisService;
+    public JwtService(CacheService cacheService) {
+        this.cacheService = cacheService;
     }
 
     private SecretKey getSigningKey () {
@@ -60,7 +61,7 @@ public class JwtService {
             throw new AppException(ErrorCode.INVALID_TOKEN, "Token not found!");
         try {
 
-            if (redisService.isTokenBlacklisted(extractTokenId(token)))
+            if (cacheService.isTokenBlacklisted(extractTokenId(token)))
                 throw new AppException(ErrorCode.INVALID_TOKEN, "Token has been revoked");
 
             Claims payload = getPayload(token);
