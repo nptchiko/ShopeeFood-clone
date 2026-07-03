@@ -45,6 +45,9 @@ public class User {
     @Column(nullable = false, length = 50)
     private String role;
 
+    @Column(name = "verified_at")
+    private OffsetDateTime verifiedAt;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
