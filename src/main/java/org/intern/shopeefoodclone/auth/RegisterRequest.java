@@ -29,3 +29,4 @@ public record RegisterRequest(
         )
         String password
 ) {}
+

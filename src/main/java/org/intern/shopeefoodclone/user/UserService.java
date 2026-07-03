@@ -2,8 +2,11 @@ package org.intern.shopeefoodclone.user;
 
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.intern.shopeefoodclone.auth.RegisterRequest;
+import org.intern.shopeefoodclone.shared.constant.PredefinedRole;
 import org.intern.shopeefoodclone.shared.exception.AppException;
 import org.intern.shopeefoodclone.shared.exception.ErrorCode;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,10 +19,20 @@ import java.util.UUID;
 public class UserService {
 
     UserRepository userRepository;
+    private final UserMapper userMapper;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional
-    public User create(User user) {
-        return userRepository.save(user);
+    public UserResponse create(RegisterRequest registerRequest) {
+
+       if (!userRepository.existsByEmail(registerRequest.email()))
+            throw new AppException(ErrorCode.USER_ALREADY_EXISTS, "User already exists with email: " + registerRequest.email());
+
+       User newUser = userMapper.toEntity(registerRequest);
+       newUser.setPasswordHash(passwordEncoder.encode(registerRequest.password()));
+       newUser.setRole(PredefinedRole.USER.name());
+
+        return userMapper.toResponse(userRepository.save(newUser));
     }
 
 
@@ -36,6 +49,10 @@ public class UserService {
     public User findByEmail(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND, "User not found with email: " + email));
+    }
+
+    public boolean existsByEmail(String email) {
+        return userRepository.existsByEmail(email);
     }
 
     @Transactional

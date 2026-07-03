@@ -1,25 +1,23 @@
 package org.intern.shopeefoodclone.auth;
 
 import jakarta.validation.Valid;
+import lombok.experimental.FieldDefaults;
 import org.intern.shopeefoodclone.shared.api.ApiResponse;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
 
 import lombok.RequiredArgsConstructor;
 import org.intern.shopeefoodclone.shared.exception.AppException;
 import org.intern.shopeefoodclone.shared.exception.ErrorCode;
 import org.intern.shopeefoodclone.user.UserResponse;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.CookieValue;
-import org.springframework.web.bind.annotation.RequestBody;
 
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@FieldDefaults(makeFinal = true, level = lombok.AccessLevel.PRIVATE)
 class AuthController {
 
-    private final AuthService authService;
+    AuthService authService;
 
     @PostMapping("/login")
     public ApiResponse<AuthResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
@@ -28,6 +26,25 @@ class AuthController {
                 .status(HttpStatus.OK.value())
                 .message("Login successful")
                 .data(response)
+                .build();
+    }
+
+    @PostMapping("/send-otp")
+    public ApiResponse<Void> sendRegistrationOtp(@Valid @RequestBody OtpRequest otpRequest) {
+        authService.sendRegistrationOtp(otpRequest);
+        return ApiResponse.<Void>builder()
+                .status(HttpStatus.OK.value())
+                .message("OTP sent successfully")
+                .build();
+    }
+
+    @PostMapping("/verify-otp")
+    public ApiResponse<AuthResponse> verifyOtp(@Valid @RequestBody OtpRequest verifyOtpRequest) {
+        AuthResponse result = authService.verifyOtp(verifyOtpRequest);
+        return ApiResponse.<AuthResponse>builder()
+                .status(HttpStatus.OK.value())
+                .message("OTP verified successfully")
+                .data(result)
                 .build();
     }
 

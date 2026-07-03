@@ -7,13 +7,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.intern.shopeefoodclone.config.security.JwtService;
-import org.intern.shopeefoodclone.config.security.RedisService;
-import org.intern.shopeefoodclone.shared.constant.PredefinedRole;
+import org.intern.shopeefoodclone.infras.cache.CacheService;
 import org.intern.shopeefoodclone.shared.exception.AppException;
 import org.intern.shopeefoodclone.shared.exception.ErrorCode;
 import org.intern.shopeefoodclone.shared.utils.SecurityUtils;
 import org.intern.shopeefoodclone.user.User;
-import org.intern.shopeefoodclone.user.UserMapper;
 import org.intern.shopeefoodclone.user.UserResponse;
 import org.intern.shopeefoodclone.user.UserService;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -25,13 +23,13 @@ import org.springframework.stereotype.Service;
 @FieldDefaults(makeFinal = true, level = lombok.AccessLevel.PRIVATE)
 class AuthService {
 
-    RedisService redisService;
+    CacheService cacheService;
     UserService userService;
     PasswordEncoder passwordEncoder;
     JwtService jwtService;
     HttpServletRequest currentRequest;
     HttpServletResponse currentResponse;
-    private final UserMapper userMapper;
+    UserOtpService userOtpService;
 
     public AuthResponse login(LoginRequest loginRequest) {
 
@@ -44,21 +42,26 @@ class AuthService {
             throw new AppException(ErrorCode.INVALID_CREDENTIALS, "Password is incorrect");
         }
 
+        if (userOtpService.isUserVerified(userEmail)) {
+            throw new AppException(ErrorCode.USER_NOT_VERIFIED, "User is not verified. Please verify your email first.");
+        }
+
         AuthResponse res  = generateTokensForUser(user.getId().toString());
         setRefreshTokenCookie(res.refreshToken());
         return res;
     }
 
-    public UserResponse register(RegisterRequest req) {
-        User user = User.builder()
-                .name(req.name())
-                .email(req.email())
-                .phone(req.phone())
-                .passwordHash(passwordEncoder.encode(req.password()))
-                .role(PredefinedRole.USER.name())
-                .build();
-        User savedUser = userService.create(user);
-        return userMapper.toResponse(savedUser);
+    public String sendRegistrationOtp(OtpRequest req) {
+        return userOtpService.generateAndSendRegistrationOtp(req.email());
+    }
+
+    public UserResponse register(RegisterRequest registerRequest) {
+        UserResponse userResponse = userService.create(registerRequest);
+        String otp = userOtpService.generateAndSendRegistrationOtp(registerRequest.email());
+
+        // send email
+
+        return userResponse;
     }
 
     public AuthResponse refreshToken(String refreshToken) {
@@ -79,7 +82,7 @@ class AuthService {
 
         String jid = jwtService.extractTokenId(token);
         log.info("Blacklisting token with JID {} for {} ms", jid, ttl);
-        redisService.blacklistToken(jid, ttl);
+        cacheService.blacklistToken(jid, ttl);
     }
 
 
@@ -126,4 +129,12 @@ class AuthService {
     }
 
 
+    public AuthResponse verifyOtp(OtpRequest request) {
+        String email = request.email();
+        String otp = request.otp();
+        User user = userService.findByEmail(email); // Check if user exists
+        userOtpService.verifyRegistrationOtp(email, otp);
+
+        return generateTokensForUser(user.getId().toString());
+    }
 }
