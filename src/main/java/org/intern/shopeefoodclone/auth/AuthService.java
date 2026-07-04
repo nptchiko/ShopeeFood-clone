@@ -8,6 +8,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.intern.shopeefoodclone.config.security.JwtService;
 import org.intern.shopeefoodclone.infras.cache.CacheService;
+import org.intern.shopeefoodclone.shared.constant.DATE;
 import org.intern.shopeefoodclone.shared.exception.AppException;
 import org.intern.shopeefoodclone.shared.exception.ErrorCode;
 import org.intern.shopeefoodclone.shared.utils.SecurityUtils;
@@ -16,6 +17,7 @@ import org.intern.shopeefoodclone.user.UserResponse;
 import org.intern.shopeefoodclone.user.UserService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -42,7 +44,7 @@ class AuthService {
             throw new AppException(ErrorCode.INVALID_CREDENTIALS, "Password is incorrect");
         }
 
-        if (userOtpService.isUserVerified(userEmail)) {
+        if (user.getVerifiedAt() == null) {
             throw new AppException(ErrorCode.USER_NOT_VERIFIED, "User is not verified. Please verify your email first.");
         }
 
@@ -55,6 +57,7 @@ class AuthService {
         return userOtpService.generateAndSendRegistrationOtp(req.email());
     }
 
+    @Transactional
     public UserResponse register(RegisterRequest registerRequest) {
         UserResponse userResponse = userService.create(registerRequest);
         String otp = userOtpService.generateAndSendRegistrationOtp(registerRequest.email());
@@ -65,9 +68,8 @@ class AuthService {
     }
 
     public AuthResponse refreshToken(String refreshToken) {
-
         jwtService.validateToken(refreshToken, false);
-        String userId = SecurityUtils.getCurrentUserId();
+        String userId = jwtService.extractUserId(refreshToken);
         return generateTokensForUser(userId);
 
     }
@@ -140,6 +142,9 @@ class AuthService {
 
         User user = userService.findByEmail(email); // Check if user exists
         userOtpService.verifyRegistrationOtp(email, otp);
+
+        user.setVerifiedAt(DATE.now());
+        userService.update(user.getId(), user);
 
         return generateTokensForUser(user.getId().toString());
     }

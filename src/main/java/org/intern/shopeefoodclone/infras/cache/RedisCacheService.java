@@ -1,11 +1,14 @@
 package org.intern.shopeefoodclone.infras.cache;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RedisCacheService implements CacheService {
@@ -29,6 +32,11 @@ public class RedisCacheService implements CacheService {
 
     @Override
     public boolean hasKey(String key) {
-        return Boolean.TRUE.equals(redisTemplate.hasKey(key));
+        try {
+            return redisTemplate.hasKey(key);
+        } catch (RedisConnectionFailureException e) {
+            log.error("Redis connection failure");
+            return true;
+        }
     }
 }
