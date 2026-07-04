@@ -59,13 +59,13 @@ public class JwtService {
     public void validateToken(String token, boolean isAccessToken) {
         if (token == null || token.trim().isEmpty() )
             throw new AppException(ErrorCode.INVALID_TOKEN, "Token not found!");
+
         try {
 
             if (cacheService.isTokenBlacklisted(extractTokenId(token)))
                 throw new AppException(ErrorCode.INVALID_TOKEN, "Token has been revoked");
 
             Claims payload = getPayload(token);
-
 
             if (payload.getSubject().isBlank()) {
                 throw new AppException(ErrorCode.INVALID_TOKEN, "Token subject is missing");
@@ -78,14 +78,19 @@ public class JwtService {
         } catch (ExpiredJwtException e) {
             log.error("Token expired: {}", e.getMessage());
             throw new AppException(ErrorCode.INVALID_TOKEN, "Expired token");
-        } catch (JwtException e) {
+        }
+        catch (MalformedJwtException e) {
+        log.error("Token parsing error: {}", e.getMessage());
+        throw new AppException(ErrorCode.INVALID_TOKEN, "Token is malformed");
+       }
+        catch (JwtException e) {
             log.error("Token validation error: {}", e.getMessage());
             throw new AppException(ErrorCode.INVALID_TOKEN, "Token is invalid");
         } catch (NullPointerException e) {
             log.error("Token parsing error: {}", e.getMessage());
             throw new AppException(ErrorCode.INVALID_TOKEN, "Token credential is missing or malformed");
         }
-    }
+        }
 
     public String extractUserId(String token){
         return getPayload(token).getSubject();

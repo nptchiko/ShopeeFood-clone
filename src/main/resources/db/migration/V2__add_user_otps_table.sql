@@ -6,4 +6,5 @@ CREATE TABLE user_otps (
     expires_at TIMESTAMPTZ NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
 ALTER TABLE users ADD COLUMN verified_at TIMESTAMPTZ DEFAULT NULL;

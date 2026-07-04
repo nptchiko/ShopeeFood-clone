@@ -54,7 +54,7 @@ public enum ErrorCode {
 
     // --- FORBIDDEN (403) ---
     FORBIDDEN(40300, "You do not have permission to access this resource.", HttpStatus.FORBIDDEN),
-    USER_NOT_VERIFIED(40301, "Your account is not verified. A new OTP has been sent to your email.", HttpStatus.FORBIDDEN),
+    USER_NOT_VERIFIED(40301, "Your account is not verified.", HttpStatus.FORBIDDEN),
 
     // --- NOT FOUND (404) ---
     RESOURCE_NOT_FOUND(40400, "No endpoint found for this request", HttpStatus.NOT_FOUND),

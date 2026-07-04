@@ -29,15 +29,8 @@ public class UserOtpService {
     SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final long OTP_TTL_SECONDS = 300L; // 5 minutes
 
-    public boolean isUserVerified(String email) {
-        return userOtpRepository.findByEmail(email).isEmpty();
-    }
-
     @Transactional
     public String generateAndSendRegistrationOtp(String email) {
-        if (userService.existsByEmail(email)) {
-            throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS, "Email is already registered.");
-        }
 
         int randomNum = 100000 + SECURE_RANDOM.nextInt(900000);
         String otp = String.valueOf(randomNum);
@@ -48,13 +41,13 @@ public class UserOtpService {
 
         // 2. Save to DB storage
         OffsetDateTime expiresAt = OffsetDateTime.now().plusSeconds(OTP_TTL_SECONDS);
+
         UserOtp userOtp = userOtpRepository.findByEmail(email).orElse(null);
         if (userOtp != null) {
             userOtp.setOtp(otp);
             userOtp.setExpiresAt(expiresAt);
         } else {
             userOtp = UserOtp.builder()
-                    .id(UUID.randomUUID())
                     .email(email)
                     .otp(otp)
                     .expiresAt(expiresAt)
@@ -69,6 +62,7 @@ public class UserOtpService {
 
     @Transactional
     public void verifyRegistrationOtp(String email, String otp) {
+
         String redisKey = "otp:register:" + email;
 
         // Step 1: Redis check

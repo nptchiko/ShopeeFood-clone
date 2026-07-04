@@ -23,7 +23,9 @@ class SecurityConfiguration {
             "/api/auth/login",
             "/api/auth/register",
             "/api/auth/refresh",
-            "/api/users/create",
+            "/api/auth/verify-otp",
+            "/api/auth/send-otp",
+
             "/docs",
     };
 
