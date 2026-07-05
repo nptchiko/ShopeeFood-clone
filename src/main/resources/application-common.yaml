@@ -18,3 +18,16 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      connect-timeout: 1000ms
+      timeout: 1000ms
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration:
+    access-token: 900000 # 15 minutes in milliseconds
+    refresh-token: 604800000 # 7 days in milliseconds

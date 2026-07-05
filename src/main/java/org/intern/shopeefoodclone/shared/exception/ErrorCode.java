@@ -21,6 +21,7 @@ public enum ErrorCode {
     INVALID_EMAIL_FORMAT(40015, "The email address you entered is not valid.", HttpStatus.BAD_REQUEST),
     USER_NOT_FOUND(40016, "The user you are looking for could not be found.", HttpStatus.BAD_REQUEST),
     GOOGLE_TOKEN_INVALID(40017, "The Google token is invalid or expired.", HttpStatus.BAD_REQUEST),
+    INVALID_OTP(40018, "The OTP code is invalid or has expired.", HttpStatus.BAD_REQUEST),
 
     // Restaurant & Menu
     RESTAURANT_NOT_FOUND(40030, "The restaurant could not be found.", HttpStatus.BAD_REQUEST),
@@ -53,7 +54,7 @@ public enum ErrorCode {
 
     // --- FORBIDDEN (403) ---
     FORBIDDEN(40300, "You do not have permission to access this resource.", HttpStatus.FORBIDDEN),
-    USER_NOT_VERIFIED(40301, "Your account is not verified. A new OTP has been sent to your email.", HttpStatus.FORBIDDEN),
+    USER_NOT_VERIFIED(40301, "Your account is not verified.", HttpStatus.FORBIDDEN),
 
     // --- NOT FOUND (404) ---
     RESOURCE_NOT_FOUND(40400, "No endpoint found for this request", HttpStatus.NOT_FOUND),

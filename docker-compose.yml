@@ -9,8 +9,10 @@ services:
         - DEBUG=1
         - SECRET_KEY=your_secret_key
         - DATABASE_URL=postgres://user:password@db:5432/dbname
+        - REDIS_HOST=redis
       depends_on:
         - db
+        - redis
 
   db:
     container_name: shopee-food-db
@@ -25,5 +27,15 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  redis:
+    container_name: shopee-food-redis
+    image: redis:7-alpine
+    restart: on-failure
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
 volumes:
   postgres_data:
+  redis_data:
