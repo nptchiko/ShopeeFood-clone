@@ -1,4 +1,4 @@
-package org.intern.shopeefoodclone.auth;
+package org.intern.shopeefoodclone.auth.otp;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

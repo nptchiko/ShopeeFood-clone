@@ -7,7 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.intern.shopeefoodclone.shared.constant.DATE;
 import org.intern.shopeefoodclone.shared.exception.AppException;
 import org.intern.shopeefoodclone.shared.exception.ErrorCode;
-import org.intern.shopeefoodclone.infras.cache.CacheService;
+import org.intern.shopeefoodclone.auth.blacklist.TokenBlacklistService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -21,12 +21,12 @@ import java.util.UUID;
 @Service
 public class JwtService {
 
-    private final CacheService cacheService;
+    private final TokenBlacklistService tokenBlacklistService;
     @Value("${jwt.secret}")
     String jwtSecret;
 
-    public JwtService(CacheService cacheService) {
-        this.cacheService = cacheService;
+    public JwtService(TokenBlacklistService tokenBlacklistService) {
+        this.tokenBlacklistService = tokenBlacklistService;
     }
 
     private SecretKey getSigningKey () {
@@ -62,7 +62,7 @@ public class JwtService {
 
         try {
 
-            if (cacheService.isTokenBlacklisted(extractTokenId(token)))
+            if (tokenBlacklistService.isBlacklisted(extractTokenId(token)))
                 throw new AppException(ErrorCode.INVALID_TOKEN, "Token has been revoked");
 
             Claims payload = getPayload(token);
