@@ -15,6 +15,14 @@ public record ApiResponse<T>(
     public static <T> ApiResponse<T> success(T data, String message) {
         return ApiResponse.<T>builder()
                 .data(data)
+                .message(message)
+                .status(200)
+                .build();
+    }
+
+    public static <T> ApiResponse<T> success(String message) {
+        return ApiResponse.<T>builder()
+                .message(message)
                 .status(200)
                 .build();
     }
@@ -22,6 +30,7 @@ public record ApiResponse<T>(
     public static <T> ApiResponse<T> created(T data, String message) {
         return ApiResponse.<T>builder()
                 .data(data)
+                .message(message)
                 .status(201)
                 .build();
     }

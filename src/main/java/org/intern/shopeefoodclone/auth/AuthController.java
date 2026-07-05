@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.experimental.FieldDefaults;
 import org.intern.shopeefoodclone.auth.otp.OtpRequest;
 import org.intern.shopeefoodclone.shared.api.ApiResponse;
+import org.intern.shopeefoodclone.user.UserCreateRequest;
 import org.springframework.web.bind.annotation.*;
 
 import lombok.RequiredArgsConstructor;
@@ -49,8 +50,9 @@ class AuthController {
                 .build();
     }
 
+    @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/register")
-    public ApiResponse<UserResponse> register(@Valid @RequestBody RegisterRequest registerRequest) {
+    public ApiResponse<UserResponse> register(@Valid @RequestBody UserCreateRequest registerRequest) {
         UserResponse response = authService.register(registerRequest);
         return ApiResponse.<UserResponse>builder()
                 .status(HttpStatus.CREATED.value())

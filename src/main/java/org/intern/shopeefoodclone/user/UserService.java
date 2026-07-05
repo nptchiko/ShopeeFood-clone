@@ -2,12 +2,10 @@ package org.intern.shopeefoodclone.user;
 
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import org.intern.shopeefoodclone.auth.RegisterRequest;
 import org.intern.shopeefoodclone.shared.constant.PredefinedRole;
 import org.intern.shopeefoodclone.shared.exception.AppException;
 import org.intern.shopeefoodclone.shared.exception.ErrorCode;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,32 +18,32 @@ import java.util.UUID;
 public class UserService {
 
     UserRepository userRepository;
-    private final UserMapper userMapper;
-    private final PasswordEncoder passwordEncoder;
-    private final UserDetailsManager userDetailsManager;
+    UserMapper userMapper;
+    PasswordEncoder passwordEncoder;
 
     @Transactional
-    public UserResponse create(RegisterRequest registerRequest) {
-
-       if (userRepository.existsByEmail(registerRequest.email()))
-            throw new AppException(ErrorCode.USER_ALREADY_EXISTS, "User already exists with email: " + registerRequest.email());
-
-       User newUser = userMapper.toEntity(registerRequest);
-       newUser.setPasswordHash(passwordEncoder.encode(registerRequest.password()));
-       newUser.setRole(PredefinedRole.USER.name());
-
+    public UserResponse create(UserCreateRequest request) {
+        if (userRepository.existsByEmail(request.email())) {
+            throw new AppException(ErrorCode.USER_ALREADY_EXISTS, "User already exists with email: " + request.email());
+        }
+        User newUser = userMapper.toEntity(request);
+        newUser.setPasswordHash(passwordEncoder.encode(request.password()));
+        newUser.setRole(PredefinedRole.USER.name());
         return userMapper.toResponse(userRepository.save(newUser));
     }
 
-
-    public List<User> findAll() {
-        return userRepository.findAll();
+    public List<UserResponse> findAll() {
+        return userMapper.toResponseList(userRepository.findAll());
     }
 
+    public UserResponse getUserById(UUID id) {
+        User user = findById(id);
+        return userMapper.toResponse(user);
+    }
 
-    public User findById(UUID id) {
+    private User findById(UUID id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND, "User not found with id: " + id));
     }
 
     public User findByEmail(String email) {
@@ -54,12 +52,20 @@ public class UserService {
     }
 
     @Transactional
-    public User update(UUID id, User updated) {
-        return userRepository.findById(id).map(user -> {
-            userMapper.update(user, updated);
-            user.setPasswordHash(passwordEncoder.encode(updated.getPasswordHash()));
-            return userRepository.save(user);
-        }).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND, "User not found with id: " + id));
+    public UserResponse update(UUID id, UserUpdateRequest request) {
+        User user = findById(id);
+
+        if (request.email() != null && !request.email().equals(user.getEmail()) && userRepository.existsByEmail(request.email())) {
+            throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
+        }
+
+        userMapper.update(user, request);
+
+        if (request.password() != null && !request.password().isBlank()) {
+            user.setPasswordHash(passwordEncoder.encode(request.password()));
+        }
+
+        return userMapper.toResponse(userRepository.save(user));
     }
 
     @Transactional
