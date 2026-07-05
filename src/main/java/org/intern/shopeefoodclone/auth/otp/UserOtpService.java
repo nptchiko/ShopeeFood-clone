@@ -1,4 +1,4 @@
-package org.intern.shopeefoodclone.auth;
+package org.intern.shopeefoodclone.auth.otp;
 
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -14,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.time.OffsetDateTime;
-import java.util.UUID;
 
 @Slf4j
 @Service

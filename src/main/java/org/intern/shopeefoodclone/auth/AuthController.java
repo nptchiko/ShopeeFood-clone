@@ -2,6 +2,7 @@ package org.intern.shopeefoodclone.auth;
 
 import jakarta.validation.Valid;
 import lombok.experimental.FieldDefaults;
+import org.intern.shopeefoodclone.auth.otp.OtpRequest;
 import org.intern.shopeefoodclone.shared.api.ApiResponse;
 import org.springframework.web.bind.annotation.*;
 
