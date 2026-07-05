@@ -2,7 +2,6 @@ package org.intern.shopeefoodclone.user;
 
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import org.intern.shopeefoodclone.auth.RegisterRequest;
 import org.intern.shopeefoodclone.shared.constant.PredefinedRole;
 import org.intern.shopeefoodclone.shared.exception.AppException;
 import org.intern.shopeefoodclone.shared.exception.ErrorCode;
@@ -23,32 +22,13 @@ public class UserService {
     PasswordEncoder passwordEncoder;
 
     @Transactional
-    public UserResponse create(RegisterRequest registerRequest) {
-
-       if (userRepository.existsByEmail(registerRequest.email()))
-            throw new AppException(ErrorCode.USER_ALREADY_EXISTS, "User already exists with email: " + registerRequest.email());
-
-       User newUser = userMapper.toEntity(registerRequest);
-       newUser.setPasswordHash(passwordEncoder.encode(registerRequest.password()));
-       newUser.setRole(PredefinedRole.USER.name());
-
-        return userMapper.toResponse(userRepository.save(newUser));
-    }
-
-    @Transactional
     public UserResponse create(UserCreateRequest request) {
         if (userRepository.existsByEmail(request.email())) {
             throw new AppException(ErrorCode.USER_ALREADY_EXISTS, "User already exists with email: " + request.email());
         }
-
         User newUser = userMapper.toEntity(request);
         newUser.setPasswordHash(passwordEncoder.encode(request.password()));
-        if (request.role() != null && !request.role().isBlank()) {
-            newUser.setRole(request.role().toUpperCase());
-        } else {
-            newUser.setRole(PredefinedRole.USER.name());
-        }
-
+        newUser.setRole(PredefinedRole.USER.name());
         return userMapper.toResponse(userRepository.save(newUser));
     }
 

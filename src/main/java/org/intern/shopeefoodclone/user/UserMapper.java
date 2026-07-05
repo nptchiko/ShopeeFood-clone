@@ -1,6 +1,5 @@
 package org.intern.shopeefoodclone.user;
 
-import org.intern.shopeefoodclone.auth.RegisterRequest;
 import org.mapstruct.BeanMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -13,10 +12,6 @@ import java.util.List;
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface UserMapper {
 
-    @Mapping(target = "passwordHash", ignore = true)
-    @Mapping(target = "role", constant = "USER")
-    User toEntity(RegisterRequest request);
-    
     @Mapping(target = "passwordHash", ignore = true)
     @Mapping(target = "role", ignore = true)
     User toEntity(UserCreateRequest request);
