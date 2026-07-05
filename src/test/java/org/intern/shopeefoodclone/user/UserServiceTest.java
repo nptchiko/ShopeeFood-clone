@@ -66,9 +66,7 @@ UserServiceTest {
                 "Test User",
                 "test@example.com",
                 "1234567890",
-                "Password123!",
-                "USER"
-        );
+                "Password123!");
 
         when(userRepository.existsByEmail(request.email())).thenReturn(false);
         when(userMapper.toEntity(request)).thenReturn(user);
@@ -90,8 +88,7 @@ UserServiceTest {
                 "Test User",
                 "test@example.com",
                 "1234567890",
-                "Password123!",
-                "USER"
+                "Password123!"
         );
 
         when(userRepository.existsByEmail(request.email())).thenReturn(true);

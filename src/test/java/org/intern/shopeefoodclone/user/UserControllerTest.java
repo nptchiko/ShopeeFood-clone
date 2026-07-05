@@ -63,8 +63,7 @@ class UserControllerTest {
                 "Test User",
                 "test@example.com",
                 "1234567890",
-                "Password123!",
-                "USER"
+                "Password123!"
         );
 
         when(userService.create(any(UserCreateRequest.class))).thenReturn(userResponse);
@@ -87,8 +86,7 @@ class UserControllerTest {
                 "",
                 "invalid-email",
                 "123",
-                "short",
-                "USER"
+                "short"
         );
 
         mockMvc.perform(post("/api/users")
