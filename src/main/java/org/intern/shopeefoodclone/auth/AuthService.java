@@ -6,18 +6,23 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.intern.shopeefoodclone.auth.blacklist.TokenBlacklistService;
+import org.intern.shopeefoodclone.auth.otp.OtpRequest;
+import org.intern.shopeefoodclone.auth.otp.UserOtpService;
 import org.intern.shopeefoodclone.config.security.JwtService;
 import org.intern.shopeefoodclone.infras.cache.CacheService;
 import org.intern.shopeefoodclone.shared.constant.DATE;
 import org.intern.shopeefoodclone.shared.exception.AppException;
 import org.intern.shopeefoodclone.shared.exception.ErrorCode;
-import org.intern.shopeefoodclone.shared.utils.SecurityUtils;
 import org.intern.shopeefoodclone.user.User;
 import org.intern.shopeefoodclone.user.UserResponse;
 import org.intern.shopeefoodclone.user.UserService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 
 @Slf4j
 @Service
@@ -32,6 +37,7 @@ class AuthService {
     HttpServletRequest currentRequest;
     HttpServletResponse currentResponse;
     UserOtpService userOtpService;
+    TokenBlacklistService tokenBlacklistService;
 
     public AuthResponse login(LoginRequest loginRequest) {
 
@@ -83,8 +89,10 @@ class AuthService {
         }
 
         String jid = jwtService.extractTokenId(token);
-        log.info("Blacklisting token with JID {} for {} ms", jid, ttl);
-        cacheService.blacklistToken(jid, ttl);
+        String userId = jwtService.extractUserId(token);
+        OffsetDateTime expiresAt = jwtService.extractTokenExpiration(token).toInstant().atOffset(ZoneOffset.UTC);
+        log.info("Blacklisting token with JID {} expiring at {}", jid, expiresAt);
+        tokenBlacklistService.revokeToken(jid, userId, expiresAt, "LOGOUT");
     }
 
 

@@ -1,4 +1,4 @@
-package org.intern.shopeefoodclone.auth;
+package org.intern.shopeefoodclone.auth.otp;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
