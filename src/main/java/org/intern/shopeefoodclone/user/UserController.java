@@ -1,11 +1,12 @@
 package org.intern.shopeefoodclone.user;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import org.springframework.http.ResponseEntity;
+import org.intern.shopeefoodclone.shared.api.ApiResponse;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -17,28 +18,25 @@ public class UserController {
     UserService userService;
 
     @PostMapping
-    public ResponseEntity<User> create(@RequestBody User user) {
-        return null;
-    }
-
-    @GetMapping
-    public ResponseEntity<List<User>> getAll() {
-        return ResponseEntity.ok(userService.findAll());
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApiResponse<UserResponse> create(@Valid @RequestBody UserCreateRequest request) {
+        UserResponse response = userService.create(request);
+        return ApiResponse.created(response, "User created successfully");
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<User> getById(@PathVariable UUID id) {
-        return ResponseEntity.ok(userService.findById(id));
+    public ApiResponse<UserResponse> getById(@PathVariable UUID id) {
+        return ApiResponse.success(userService.getUserById(id), "User retrieved successfully");
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<User> update(@PathVariable UUID id, @RequestBody User user) {
-        return ResponseEntity.ok(userService.update(id, user));
+    public ApiResponse<UserResponse> update(@PathVariable UUID id, @Valid @RequestBody UserUpdateRequest request) {
+        return ApiResponse.success(userService.update(id, request), "User updated successfully");
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable UUID id) {
+    public ApiResponse<Void> delete(@PathVariable UUID id) {
         userService.delete(id);
-        return ResponseEntity.noContent().build();
+        return ApiResponse.success("User deleted successfully");
     }
 }

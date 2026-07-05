@@ -12,9 +12,7 @@ import org.intern.shopeefoodclone.shared.constant.DATE;
 import org.intern.shopeefoodclone.shared.exception.AppException;
 import org.intern.shopeefoodclone.shared.exception.ErrorCode;
 import org.intern.shopeefoodclone.shared.utils.SecurityUtils;
-import org.intern.shopeefoodclone.user.User;
-import org.intern.shopeefoodclone.user.UserResponse;
-import org.intern.shopeefoodclone.user.UserService;
+import org.intern.shopeefoodclone.user.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -58,7 +56,7 @@ class AuthService {
     }
 
     @Transactional
-    public UserResponse register(RegisterRequest registerRequest) {
+    public UserResponse register(UserCreateRequest registerRequest) {
         UserResponse userResponse = userService.create(registerRequest);
         String otp = userOtpService.generateAndSendRegistrationOtp(registerRequest.email());
 
@@ -144,7 +142,8 @@ class AuthService {
         userOtpService.verifyRegistrationOtp(email, otp);
 
         user.setVerifiedAt(DATE.now());
-        userService.update(user.getId(), user);
+        userService.update(user.getId(), UserUpdateRequest.builder()
+                    .verifiedAt(user.getVerifiedAt()).build());
 
         return generateTokensForUser(user.getId().toString());
     }
