@@ -1,4 +1,4 @@
-package org.intern.shopeefoodclone.restaurant;
+package org.intern.shopeefoodclone.restaurant.menu.item;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.intern.shopeefoodclone.restaurant.menu.category.MenuCategory;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
