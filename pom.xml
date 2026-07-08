@@ -124,6 +124,13 @@
             <artifactId>mapstruct</artifactId>
             <version>${org.mapstruct.version}</version>
         </dependency>
+
+        <!-- RSQL JPA Specification -->
+        <dependency>
+            <groupId>io.github.perplexhub</groupId>
+            <artifactId>rsql-jpa-spring-boot-starter</artifactId>
+            <version>7.0.2</version>
+        </dependency>
     </dependencies>
 
     <build>
