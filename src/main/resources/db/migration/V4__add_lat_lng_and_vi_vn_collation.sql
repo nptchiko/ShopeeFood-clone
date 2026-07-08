@@ -7,9 +7,8 @@ CREATE COLLATION IF NOT EXISTS vi_vn (provider = icu, locale = 'vi-VN');
 
 -- 2. Add geographic coordinates to addresses
 ALTER TABLE addresses
-    ADD COLUMN latitude  DOUBLE PRECISION,
-    ADD COLUMN longitude DOUBLE PRECISION;
-
+    ADD COLUMN lat NUMERIC(10, 7),
+    ADD COLUMN lng NUMERIC(10, 7);
 -- 3. Apply vi_vn collation to user-visible text columns
 --    This ensures ORDER BY / LIKE / index comparisons respect Vietnamese diacritics
 
