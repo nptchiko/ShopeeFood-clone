@@ -28,6 +28,9 @@ public enum ErrorCode {
     MENU_ITEM_NOT_FOUND(40031, "The selected food item is no longer available.", HttpStatus.BAD_REQUEST),
     RESTAURANT_CLOSED(40032, "The restaurant is currently closed.", HttpStatus.BAD_REQUEST),
     OUT_OF_STOCK(40033, "One or more items in your order are out of stock.", HttpStatus.BAD_REQUEST),
+    MENU_CATEGORY_NOT_FOUND(40034, "The menu category could not be found.", HttpStatus.BAD_REQUEST),
+    MENU_CATEGORY_ALREADY_EXISTS(40035, "A menu category with this name already exists in this restaurant.", HttpStatus.BAD_REQUEST),
+    MENU_ITEM_ALREADY_EXISTS(40036, "A menu item with this name already exists in this category.", HttpStatus.BAD_REQUEST),
 
     // Order & Cart
     CART_IS_EMPTY(40040, "Your cart is empty. Please add items before checkout.", HttpStatus.BAD_REQUEST),
@@ -40,6 +43,7 @@ public enum ErrorCode {
     DRIVER_NOT_FOUND(40050, "The delivery driver could not be found.", HttpStatus.BAD_REQUEST),
     DELIVERY_ADDRESS_NOT_FOUND(40051, "Delivery address is missing or invalid.", HttpStatus.BAD_REQUEST),
     OUT_OF_DELIVERY_AREA(40052, "Your address is out of the delivery area for this restaurant.", HttpStatus.BAD_REQUEST),
+    ADDRESS_NOT_FOUND(40053, "The address could not be found.", HttpStatus.BAD_REQUEST),
 
     // Payment & Vouchers
     PAYMENT_FAILED(40060, "Payment failed. Please try a different payment method.", HttpStatus.BAD_REQUEST),

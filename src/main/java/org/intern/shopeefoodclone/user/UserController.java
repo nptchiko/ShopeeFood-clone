@@ -7,6 +7,7 @@ import org.intern.shopeefoodclone.shared.api.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -22,6 +23,11 @@ public class UserController {
     public ApiResponse<UserResponse> create(@Valid @RequestBody UserCreateRequest request) {
         UserResponse response = userService.create(request);
         return ApiResponse.created(response, "User created successfully");
+    }
+
+    @GetMapping
+    public ApiResponse<List<UserResponse>> getAll() {
+        return ApiResponse.success(userService.findAll(), "Users retrieved successfully");
     }
 
     @GetMapping("/{id}")
