@@ -1,9 +1,8 @@
 package org.intern.shopeefoodclone.user.address;
 
-import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Size;
-
-import java.math.BigDecimal;
 
 public record AddressUpdateRequest(
         @Size(max = 50, message = "Label must be at most 50 characters")
@@ -23,9 +22,11 @@ public record AddressUpdateRequest(
 
         Boolean isDefault,
 
-        @Pattern(regexp = "^-?\\d{1,3}\\.\\d{1,7}$", message = "Latitude must be a valid decimal number with up to 7 decimal places")
-        BigDecimal latitude,
+        @DecimalMin(value = "-90.0",  message = "Latitude must be >= -90")
+        @DecimalMax(value = "90.0",   message = "Latitude must be <= 90")
+        Double latitude,
 
-        @Pattern(regexp = "^-?\\d{1,3}\\.\\d{1,7}$", message = "Longitude must be a valid decimal number with up to 7 decimal places")
-        BigDecimal longitude
+        @DecimalMin(value = "-180.0", message = "Longitude must be >= -180")
+        @DecimalMax(value = "180.0",  message = "Longitude must be <= 180")
+        Double longitude
 ) {}

@@ -1,6 +1,5 @@
 package org.intern.shopeefoodclone.user.address;
 
-import java.math.BigDecimal;
 import java.util.UUID;
 
 public record AddressResponse(
@@ -12,6 +11,5 @@ public record AddressResponse(
         String city,
         String postalCode,
         Boolean isDefault,
-        BigDecimal latitude,
-        BigDecimal longitude
-) {}
+        Double latitude,
+        Double longitude) {}

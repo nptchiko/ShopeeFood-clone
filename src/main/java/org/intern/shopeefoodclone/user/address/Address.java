@@ -32,11 +32,11 @@ public class Address {
 
     @NotBlank(message = "Line 1 is required")
     @Size(max = 255)
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false)
     private String line1;
 
     @Size(max = 255)
-    @Column(length = 255)
+    @Column
     private String line2;
 
     @Size(max = 100)
