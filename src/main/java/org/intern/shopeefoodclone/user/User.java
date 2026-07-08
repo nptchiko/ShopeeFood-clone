@@ -1,4 +1,4 @@
-package org.intern.shopeefoodclone.entity;
+package org.intern.shopeefoodclone.user;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
@@ -30,7 +30,7 @@ public class User {
     @NotBlank(message = "Email is required")
     @Email(message = "Invalid email format")
     @Size(max = 255, message = "Email must be at most 255 characters")
-    @Column(nullable = false, unique = true, length = 255)
+    @Column(nullable = false, unique = true)
     private String email;
 
     @Size(max = 20, message = "Phone must be at most 20 characters")
@@ -41,10 +41,12 @@ public class User {
     @Column(name = "password_hash", nullable = false, columnDefinition = "TEXT")
     private String passwordHash;
 
-    @NotBlank(message = "Role is required")
     @Size(max = 50)
     @Column(nullable = false, length = 50)
     private String role;
+
+    @Column(name = "verified_at")
+    private OffsetDateTime verifiedAt;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

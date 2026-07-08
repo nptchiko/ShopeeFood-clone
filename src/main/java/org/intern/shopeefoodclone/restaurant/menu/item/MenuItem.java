@@ -1,54 +1,50 @@
-package org.intern.shopeefoodclone.entity;
+package org.intern.shopeefoodclone.restaurant.menu.item;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.intern.shopeefoodclone.restaurant.menu.category.MenuCategory;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "restaurants")
+@Table(name = "menu_items")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Restaurant {
+public class MenuItem {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "owner_user_id")
-    private User owner;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "category_id", nullable = false)
+    private MenuCategory category;
 
     @NotBlank(message = "Name is required")
     @Size(max = 150)
     @Column(nullable = false, length = 150)
     private String name;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "address_id")
-    private Address address;
-
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "logo_url", columnDefinition = "TEXT")
-    private String logoUrl;
+    @NotNull(message = "Price is required")
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal price;
 
-    @Column(name = "banner_url", columnDefinition = "TEXT")
-    private String bannerUrl;
+    @Column(name = "image_url", columnDefinition = "TEXT")
+    private String imageUrl;
 
-    @Column(precision = 3, scale = 2)
-    private BigDecimal rating;
-
-    @Column(name = "is_open")
-    private Boolean isOpen;
+    @Column(name = "is_available")
+    private Boolean isAvailable;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

@@ -1,11 +1,13 @@
-package org.intern.shopeefoodclone.entity;
+package org.intern.shopeefoodclone.user.address;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.intern.shopeefoodclone.user.User;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -26,15 +28,15 @@ public class Address {
 
     @Size(max = 50)
     @Column(length = 50)
-    private String label;
+    private String label; // HOME, WORK, etc.
 
     @NotBlank(message = "Line 1 is required")
     @Size(max = 255)
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false)
     private String line1;
 
     @Size(max = 255)
-    @Column(length = 255)
+    @Column
     private String line2;
 
     @Size(max = 100)
@@ -47,6 +49,12 @@ public class Address {
 
     @Column(name = "is_default")
     private Boolean isDefault;
+
+    @Column(name = "lat", precision = 10, scale = 7)
+    private BigDecimal latitude;
+
+    @Column(name = "lng", precision = 10, scale = 7)
+    private BigDecimal longitude;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

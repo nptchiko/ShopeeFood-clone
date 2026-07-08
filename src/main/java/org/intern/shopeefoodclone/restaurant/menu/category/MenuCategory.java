@@ -1,10 +1,11 @@
-package org.intern.shopeefoodclone.entity;
+package org.intern.shopeefoodclone.restaurant.menu.category;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.intern.shopeefoodclone.restaurant.Restaurant;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
