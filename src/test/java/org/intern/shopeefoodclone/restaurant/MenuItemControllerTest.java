@@ -86,14 +86,14 @@ class MenuItemControllerTest {
                 .totalElements(1)
                 .totalPages(1)
                 .build();
-        when(menuItemService.findByCategoryId(eq(categoryId), any(), any(), any(), any(), any(Pageable.class))).thenReturn(pageResponse);
+        when(menuItemService.findByCategoryId(eq(categoryId), any(), any(Pageable.class))).thenReturn(pageResponse);
 
         mockMvc.perform(get("/api/categories/" + categoryId + "/items"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value(200))
                 .andExpect(jsonPath("$.data.content[0].name").value("Iced Coffee"));
 
-        verify(menuItemService).findByCategoryId(eq(categoryId), any(), any(), any(), any(), any(Pageable.class));
+        verify(menuItemService).findByCategoryId(eq(categoryId), any(), any(Pageable.class));
     }
 
     @Test

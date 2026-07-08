@@ -4,8 +4,8 @@ import org.intern.shopeefoodclone.restaurant.menu.category.MenuCategoryRepositor
 import org.intern.shopeefoodclone.restaurant.menu.category.MenuCategoryService;
 import org.intern.shopeefoodclone.shared.exception.AppException;
 import org.intern.shopeefoodclone.shared.exception.ErrorCode;
-import org.intern.shopeefoodclone.user.Address;
-import org.intern.shopeefoodclone.user.AddressRepository;
+import org.intern.shopeefoodclone.user.address.Address;
+import org.intern.shopeefoodclone.user.address.AddressRepository;
 import org.intern.shopeefoodclone.user.User;
 import org.intern.shopeefoodclone.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -77,9 +77,9 @@ class RestaurantServiceTest {
                 .isOpen(true)
                 .build();
 
-        createRequest = new RestaurantCreateRequest(ownerId, "Burger King", addressId, "Fast food", "logo", "banner", true);
+        createRequest = new RestaurantCreateRequest(ownerId, "Burger King", "Fast food", "logo", "banner", true);
         response = new RestaurantResponse(restaurantId, ownerId, "Burger King", addressId, "Fast food", "logo", "banner", BigDecimal.ZERO, true, OffsetDateTime.now(), OffsetDateTime.now());
-        detailResponse = new RestaurantDetailResponse(restaurantId, ownerId, "Burger King", addressId, "Fast food", "logo", "banner", BigDecimal.ZERO, true, Collections.emptyList(), OffsetDateTime.now(), OffsetDateTime.now());
+        detailResponse = new RestaurantDetailResponse(restaurantId, ownerId, "Burger King", addressId, "Fast food", "logo", "banner", BigDecimal.ZERO, true, Collections.emptyList());
     }
 
     @Test

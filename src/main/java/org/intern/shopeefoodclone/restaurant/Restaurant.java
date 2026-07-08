@@ -2,7 +2,7 @@ package org.intern.shopeefoodclone.restaurant;
 
 import jakarta.persistence.*;
 import org.intern.shopeefoodclone.user.User;
-import org.intern.shopeefoodclone.user.Address;
+import org.intern.shopeefoodclone.user.address.Address;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.*;
