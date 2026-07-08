@@ -31,7 +31,7 @@ class AuthController {
                 .build();
     }
 
-    @PostMapping("/send-otp")
+    @PostMapping("/otp/send")
     public ApiResponse<Void> sendRegistrationOtp(@Valid @RequestBody OtpRequest otpRequest) {
         authService.sendRegistrationOtp(otpRequest);
         return ApiResponse.<Void>builder()
@@ -40,7 +40,7 @@ class AuthController {
                 .build();
     }
 
-    @PostMapping("/verify-otp")
+    @PostMapping("/otp/verify")
     public ApiResponse<AuthResponse> verifyOtp(@Valid @RequestBody OtpRequest verifyOtpRequest) {
         AuthResponse result = authService.verifyOtp(verifyOtpRequest);
         return ApiResponse.<AuthResponse>builder()
