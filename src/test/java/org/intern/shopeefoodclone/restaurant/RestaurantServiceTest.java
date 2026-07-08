@@ -85,7 +85,6 @@ class RestaurantServiceTest {
     @Test
     void testCreate_Success() {
         when(userRepository.findById(ownerId)).thenReturn(Optional.of(owner));
-        when(addressRepository.findById(addressId)).thenReturn(Optional.of(address));
         when(restaurantMapper.toEntity(createRequest)).thenReturn(restaurant);
         when(restaurantRepository.save(restaurant)).thenReturn(restaurant);
         when(restaurantMapper.toResponse(restaurant)).thenReturn(response);
@@ -108,12 +107,18 @@ class RestaurantServiceTest {
 
     @Test
     void testCreate_AddressNotFound() {
+        // RestaurantCreateRequest has no addressId — address is linked via update(),
+        // not at creation time. Verify create() never consults the address repository.
         when(userRepository.findById(ownerId)).thenReturn(Optional.of(owner));
-        when(addressRepository.findById(addressId)).thenReturn(Optional.empty());
+        when(restaurantMapper.toEntity(createRequest)).thenReturn(restaurant);
+        when(restaurantRepository.save(restaurant)).thenReturn(restaurant);
+        when(restaurantMapper.toResponse(restaurant)).thenReturn(response);
 
-        AppException ex = assertThrows(AppException.class, () -> restaurantService.create(createRequest));
-        assertEquals(ErrorCode.ADDRESS_NOT_FOUND, ex.getErrorCode());
-        verify(restaurantRepository, never()).save(any());
+        RestaurantResponse res = restaurantService.create(createRequest);
+
+        assertNotNull(res);
+        verify(addressRepository, never()).findById(any());
+        verify(restaurantRepository).save(restaurant);
     }
 
     @Test

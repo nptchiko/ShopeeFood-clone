@@ -108,8 +108,7 @@ class MenuCategoryServiceTest {
     void testFindByRestaurantId_Success() {
         when(restaurantRepository.existsById(restaurantId)).thenReturn(true);
         when(menuCategoryRepository.findByRestaurantIdOrderBySortOrderAsc(restaurantId)).thenReturn(List.of(category));
-        when(menuItemRepository.findByCategoryId(categoryId)).thenReturn(Collections.emptyList());
-        when(menuItemMapper.toResponseList(Collections.emptyList())).thenReturn(Collections.emptyList());
+        when(menuItemRepository.findByCategoryIdIn(List.of(categoryId))).thenReturn(Collections.emptyList());
         when(menuCategoryMapper.toResponseWithItems(category, Collections.emptyList())).thenReturn(response);
 
         List<MenuCategoryResponse> list = menuCategoryService.findByRestaurantId(restaurantId);
