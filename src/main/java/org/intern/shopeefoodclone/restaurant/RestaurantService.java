@@ -11,8 +11,8 @@ import org.intern.shopeefoodclone.shared.api.PageResponse;
 import org.intern.shopeefoodclone.shared.exception.AppException;
 import org.intern.shopeefoodclone.shared.exception.ErrorCode;
 import org.intern.shopeefoodclone.shared.utils.PaginationUtils;
-import org.intern.shopeefoodclone.user.Address;
-import org.intern.shopeefoodclone.user.AddressRepository;
+import org.intern.shopeefoodclone.user.address.Address;
+import org.intern.shopeefoodclone.user.address.AddressRepository;
 import org.intern.shopeefoodclone.user.User;
 import org.intern.shopeefoodclone.user.UserRepository;
 import org.springframework.data.domain.Page;
@@ -78,6 +78,12 @@ public class RestaurantService {
             Address newAddress = addressRepository.findById(request.addressId())
                     .orElseThrow(() -> new AppException(ErrorCode.ADDRESS_NOT_FOUND, "Address not found with id: " + request.addressId()));
             restaurant.setAddress(newAddress);
+        }
+
+        // A restaurant cannot go live without a physical address
+        if (Boolean.TRUE.equals(request.isOpen()) && restaurant.getAddress() == null) {
+            throw new AppException(ErrorCode.DELIVERY_ADDRESS_NOT_FOUND,
+                    "Restaurant must have an address before being set to open.");
         }
 
         restaurantMapper.update(restaurant, request);
