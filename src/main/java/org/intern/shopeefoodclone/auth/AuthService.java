@@ -11,6 +11,7 @@ import org.intern.shopeefoodclone.auth.otp.OtpRequest;
 import org.intern.shopeefoodclone.auth.otp.UserOtpService;
 import org.intern.shopeefoodclone.config.security.JwtService;
 import org.intern.shopeefoodclone.infras.cache.CacheService;
+import org.intern.shopeefoodclone.infras.messaging.KafkaEventPublisher;
 import org.intern.shopeefoodclone.shared.constant.DATE;
 import org.intern.shopeefoodclone.shared.exception.AppException;
 import org.intern.shopeefoodclone.shared.exception.ErrorCode;
@@ -29,7 +30,6 @@ import java.time.ZoneOffset;
 @FieldDefaults(makeFinal = true, level = lombok.AccessLevel.PRIVATE)
 class AuthService {
 
-    CacheService cacheService;
     UserService userService;
     PasswordEncoder passwordEncoder;
     JwtService jwtService;
@@ -37,6 +37,7 @@ class AuthService {
     HttpServletResponse currentResponse;
     UserOtpService userOtpService;
     TokenBlacklistService tokenBlacklistService;
+    KafkaEventPublisher kafkaEventPublisher;
 
     public AuthResponse login(LoginRequest loginRequest) {
 
@@ -67,7 +68,9 @@ class AuthService {
         UserResponse userResponse = userService.create(registerRequest);
         String otp = userOtpService.generateAndSendRegistrationOtp(registerRequest.email());
 
-        // send email
+        // Publish domain event so notification consumer sends a welcome email asynchronously
+        User newUser = userService.findByEmail(registerRequest.email());
+        kafkaEventPublisher.publishUserRegistered(newUser);
 
         return userResponse;
     }

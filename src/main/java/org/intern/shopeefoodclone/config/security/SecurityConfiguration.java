@@ -25,7 +25,7 @@ class SecurityConfiguration {
             "/api/auth/refresh",
             "/api/auth/verify-otp",
             "/api/auth/send-otp",
-
+            "/api/auth/otp/**",
             "/docs",
     };
 
