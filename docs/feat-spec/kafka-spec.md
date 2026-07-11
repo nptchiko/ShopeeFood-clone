@@ -24,15 +24,15 @@ This document defines the software requirements for the **Event-Driven Architect
 ### 1.2 Scope
 The module covers all asynchronous event flows triggered by the **Authentication** domain, as well as the notification delivery infrastructure that consumes those events.
 
-| Sub-feature              | Responsibility                                               |
+| Sub-feature              | Responsibility                                                              |
 |---|---|
-| **Event Publishing**      | Produce domain events to Kafka topics after state changes   |
-| **Notification Consumer** | Consume events and dispatch email notifications via SMTP    |
-| **OTP Delivery**          | Async dispatch of 6-digit OTP emails                        |
-| **Welcome Email Delivery**| Async dispatch of greeting + OTP email on registration      |
-| **Reliability**           | At-least-once delivery via manual ACK + retry + DLT         |
-| **Dead-Letter Handling**  | Route poison-pill messages to DLT after max retries         |
-| **Observability**         | Correlation ID propagation across all event boundaries       |
+| **Event Publishing**      | Produce domain events to Kafka topics after state changes                  |
+| **Notification Consumer** | Consume events and dispatch email notifications via SMTP                   |
+| **OTP Delivery**          | Async dispatch of 6-digit OTP emails (independent of registration)         |
+| **Welcome Email Delivery**| Async dispatch of greeting-only email on registration (no OTP embedded)    |
+| **Reliability**           | At-least-once delivery via manual ACK + retry + DLT                        |
+| **Dead-Letter Handling**  | Route poison-pill messages to DLT after max retries                        |
+| **Observability**         | Correlation ID propagation across all event boundaries                      |
 
 ### 1.3 Technology Stack
 
@@ -55,30 +55,46 @@ The module covers all asynchronous event flows triggered by the **Authentication
 
 The system adopts a **producer-consumer** event-driven pattern where domain services publish immutable events to Kafka topics and notification consumers independently react without coupling to the originating domain.
 
+OTP delivery and welcome email delivery are now **fully independent event streams**. Registration triggers both, but they travel through separate topics, separate producers, and are consumed independently.
+
 ```
-Auth Domain                  Kafka Broker              Notification Domain
+AuthService                 Kafka Broker              KafkaNotificationConsumer
     |                            |                            |
-    |-- publishUserRegistered --> [user.registered] --------> handleUserRegistered()
-    |                            |                            |-- sendEmail() (greeting + OTP)
+    |-- publishUserRegistered -> [user.registered] --------> handleUserRegistered()
+    |                            |                            |-- sendEmail() (greeting only)
     |                            |                            |
-    |-- publishOtpVerification-> [otp.verification.requested] -> handleOtpVerificationRequested()
-    |                            |                            |-- sendOtpEmail()
-    |                            |                            |
-    |                     [*.DLT] (on failure)               |
+    |-- generateAndSendOtp() --> UserOtpService              |
+                                    |                         |
+                              publishOtpVerificationRequested |
+                                    |                         |
+                                    v                         |
+                              [otp.verification.requested] -> handleOtpVerificationRequested()
+                                                              |-- sendOtpEmail() (OTP only)
+                                                              |
+                             [*.DLT] (on failure for either stream)
 ```
 
 ### 2.2 Key Design Decisions
 
-| Decision                    | Rationale                                                                          |
+| Decision                             | Rationale                                                                          |
 |---|---|
-| **At-least-once delivery**  | Offset committed via manual ACK only on success — never lost even on crash          |
-| **Email as partition key**  | All events for the same user land on the same partition; ordering guaranteed        |
-| **Type headers enabled**    | spring.json.use.type.headers: true lets the deserializer resolve the exact event class without a mapping registry |
-| **Dead-Letter Topics**      | Failed messages after 3 retries are routed to *.DLT for inspection/replay          |
-| **Correlation ID per event**| UUID generated at publish time, logged by both producer and consumer for end-to-end tracing |
-| **Decoupled notification**  | Email delivery is entirely in KafkaNotificationConsumer — auth domain has zero SMTP dependency |
+| **Detached OTP from registration**   | OTP sending is delegated to UserOtpService, which publishes its own event independently. AuthService only publishes the UserRegisteredEvent. This allows OTP resend to reuse the exact same code path without special-casing the registration scenario. |
+| **Welcome email contains no OTP**    | UserRegisteredEvent carries no otpCode. The welcome email is a pure greeting. OTP is delivered via a separate dedicated email through OtpVerificationRequestedEvent. |
+| **At-least-once delivery**           | Offset committed via manual ACK only on success — never lost even on crash          |
+| **Email as partition key**           | All events for the same user land on the same partition; ordering guaranteed        |
+| **Type headers enabled**             | spring.json.use.type.headers: true lets the deserializer resolve the exact event class without a mapping registry |
+| **Dead-Letter Topics**               | Failed messages after 3 retries are routed to *.DLT for inspection/replay          |
+| **Correlation ID per event**         | UUID generated at publish time, logged by both producer and consumer for end-to-end tracing |
+| **Decoupled notification**           | Email delivery is entirely in KafkaNotificationConsumer — auth domain has zero SMTP dependency |
 
-### 2.3 Consumer Group
+### 2.3 Who Publishes What
+
+| Event                           | Published by       | Triggered from           |
+|---|---|---|
+| UserRegisteredEvent             | AuthService        | POST /api/auth/register  |
+| OtpVerificationRequestedEvent   | UserOtpService     | POST /api/auth/register (via generateAndSendRegistrationOtp) AND POST /api/auth/otp/send |
+
+### 2.4 Consumer Group
 
 | Setting          | Value                              |
 |---|---|
@@ -93,20 +109,21 @@ Auth Domain                  Kafka Broker              Notification Domain
 
 ### 3.1 OtpVerificationRequestedEvent
 
-> **Topic:** otp.verification.requested  
-> **Schema version:** 1  
+> **Topic:** otp.verification.requested
+> **Schema version:** 1
 > **Published by:** UserOtpService.generateAndSendRegistrationOtp()
+> **Triggered by:** Registration flow (via AuthService) AND standalone OTP resend (POST /api/auth/otp/send)
 
-Fired whenever the system generates a new OTP code — either on initial registration or on explicit OTP resend.
+Fired whenever the system generates a new OTP code — either on initial registration or on explicit OTP resend. This event is the **sole trigger** for OTP email delivery. It is independent of `UserRegisteredEvent`.
 
 #### Schema
 
-| Field           | Type            | Nullable | Description                                           |
+| Field         | Type             | Nullable | Description                                             |
 |---|---|---|---|
-| correlationId   | UUID            | No       | Unique event ID for idempotency and distributed tracing |
-| email           | String          | No       | Recipient email address; also used as Kafka partition key |
-| otpCode         | String (6-digit)| No       | The OTP code to embed in the verification email       |
-| requestedAt     | OffsetDateTime  | No       | UTC timestamp when the event was created              |
+| correlationId | UUID             | No       | Unique event ID for idempotency and distributed tracing |
+| email         | String           | No       | Recipient email address; also used as Kafka partition key |
+| otpCode       | String (6-digit) | No       | The OTP code to embed in the verification email         |
+| requestedAt   | OffsetDateTime   | No       | UTC timestamp when the event was created                |
 
 #### Example Payload (JSON)
 
@@ -123,22 +140,22 @@ Fired whenever the system generates a new OTP code — either on initial registr
 
 ### 3.2 UserRegisteredEvent
 
-> **Topic:** user.registered  
-> **Schema version:** 1  
+> **Topic:** user.registered
+> **Schema version:** 1
 > **Published by:** AuthService.register()
+> **Triggered by:** POST /api/auth/register only
 
-Fired when a new user account is successfully created. Carries the OTP code so a single email can serve as both the welcome greeting and the verification prompt.
+Fired when a new user account is successfully created. This event is **solely responsible for triggering the welcome/greeting email**. It does **not** carry an OTP code — OTP delivery is handled by the separate `OtpVerificationRequestedEvent`.
 
 #### Schema
 
-| Field           | Type            | Nullable | Description                                                      |
+| Field         | Type           | Nullable | Description                                               |
 |---|---|---|---|
-| correlationId   | UUID            | No       | Unique event ID for idempotency and distributed tracing          |
-| userId          | UUID            | No       | The newly created user's primary key                             |
-| email           | String          | No       | Registered email address; also used as Kafka partition key       |
-| displayName     | String          | No       | User's display name for personalised email greeting              |
-| otpCode         | String (6-digit)| Yes      | OTP code to include in welcome email; null if not applicable     |
-| registeredAt    | OffsetDateTime  | No       | UTC timestamp when the user account was created                  |
+| correlationId | UUID           | No       | Unique event ID for idempotency and distributed tracing   |
+| userId        | UUID           | No       | The newly created user's primary key                      |
+| email         | String         | No       | Registered email address; also used as Kafka partition key |
+| displayName   | String         | No       | User's display name for personalised email greeting       |
+| registeredAt  | OffsetDateTime | No       | UTC timestamp when the user account was created           |
 
 #### Example Payload (JSON)
 
@@ -148,7 +165,6 @@ Fired when a new user account is successfully created. Carries the OTP code so a
   "userId": "d4e5f6a7-b8c9-0123-4567-890abcdef012",
   "email": "miku@example.com",
   "displayName": "Miku Nakano",
-  "otpCode": "482931",
   "registeredAt": "2026-07-11T06:15:00Z"
 }
 ```
@@ -159,11 +175,11 @@ Fired when a new user account is successfully created. Carries the OTP code so a
 
 ### 4.1 Topics
 
-| Topic Name                         | Partitions | Replicas           | Purpose                                              |
+| Topic Name                         | Partitions | Replicas           | Purpose                                               |
 |---|---|---|---|
-| otp.verification.requested         | 3          | 1 (dev) / 3 (prod) | OTP dispatch events                                  |
-| user.registered                    | 3          | 1 (dev) / 3 (prod) | New user registration events                         |
-| otp.verification.requested.DLT     | 1          | 1                  | Dead-letter for OTP events after max retries         |
+| otp.verification.requested         | 3          | 1 (dev) / 3 (prod) | OTP dispatch events (registration + resend)           |
+| user.registered                    | 3          | 1 (dev) / 3 (prod) | New user registration welcome email events            |
+| otp.verification.requested.DLT     | 1          | 1                  | Dead-letter for OTP events after max retries          |
 | user.registered.DLT                | 1          | 1                  | Dead-letter for registration events after max retries |
 
 ### 4.2 Partition Key Strategy
@@ -184,81 +200,104 @@ Topics are automatically created at application startup by Spring Kafka's `Kafka
 
 ## 5. Functional Requirements
 
-### 5.1 Event Publishing
+### 5.1 UserRegisteredEvent Publishing
 
 | ID    | Requirement |
 |---|---|
-| K-01  | The system **shall** publish an OtpVerificationRequestedEvent to otp.verification.requested each time an OTP is generated for a user email. |
-| K-02  | The system **shall** publish a UserRegisteredEvent to user.registered upon successful user account creation, including the associated OTP code. |
+| K-01  | The system **shall** publish a UserRegisteredEvent to user.registered upon successful user account creation in AuthService.register(). |
+| K-02  | UserRegisteredEvent **shall** contain only: correlationId, userId, email, displayName, registeredAt. It **shall not** contain an OTP code. |
 | K-03  | Each published event **shall** include a unique correlationId (UUID v4) generated at publish time. |
-| K-04  | The user's email address **shall** be used as the Kafka message partition key for all events. |
-| K-05  | The producer **shall** embed a Java type header into every Kafka record so consumers can deserialize to the exact event class without a type mapping registry. |
-| K-06  | On broker acknowledgment, the publisher **shall** log the correlationId, partition, and offset at DEBUG level. |
-| K-07  | On broker send failure, the publisher **shall** log the correlationId, email, and error message at ERROR level without re-throwing. |
+| K-04  | The user's email address **shall** be used as the Kafka message partition key. |
+| K-05  | The producer **shall** embed a Java type header into every Kafka record for type-safe deserialization. |
+| K-06  | On broker acknowledgment, the publisher **shall** log correlationId, userId, email, partition, and offset at DEBUG level. |
+| K-07  | On broker send failure, the publisher **shall** log correlationId, userId, and error message at ERROR level without re-throwing. |
 
-### 5.2 OTP Email Consumer
-
-| ID    | Requirement |
-|---|---|
-| K-08  | The consumer **shall** listen on topic otp.verification.requested and call EmailService.sendOtpEmail(email, otpCode) upon receipt. |
-| K-09  | The consumer **shall** commit the offset (via Acknowledgment.acknowledge()) **only** after the email service call returns successfully. |
-| K-10  | If EmailService.sendOtpEmail() throws, the consumer **shall** re-throw the exception to allow the DefaultErrorHandler to apply the retry policy. |
-| K-11  | The consumer **shall** log the correlationId, email, partition, and offset at INFO level upon receiving each event. |
-
-### 5.3 Welcome + OTP Email Consumer
+### 5.2 OtpVerificationRequestedEvent Publishing
 
 | ID    | Requirement |
 |---|---|
-| K-12  | The consumer **shall** listen on topic user.registered and dispatch a welcome email upon receipt. |
-| K-13  | If the event carries a non-blank otpCode, the welcome email body **shall** include the verification code. |
-| K-14  | If the event's otpCode is null or blank, the welcome email **shall** be sent without a verification code section. |
-| K-15  | The consumer **shall** call EmailService.sendEmail(email, subject, body) with subject "Welcome to ShopeeFood!". |
-| K-16  | The consumer **shall** commit the offset only after the email service call returns successfully. |
-| K-17  | The consumer **shall** log the correlationId, userId, email, partition, and offset at INFO level upon receiving each event. |
+| K-08  | The system **shall** publish an OtpVerificationRequestedEvent to otp.verification.requested each time UserOtpService.generateAndSendRegistrationOtp() is called, regardless of whether it is triggered by registration or a standalone resend request. |
+| K-09  | OtpVerificationRequestedEvent **shall** contain: correlationId, email, otpCode, requestedAt. |
+| K-10  | On broker send failure, the publisher **shall** log correlationId, email, and error at ERROR level without re-throwing. |
 
-### 5.4 Error Recovery
+### 5.3 Welcome Email Consumer (user.registered)
 
 | ID    | Requirement |
 |---|---|
-| K-18  | The system **shall** retry failed consumer processing up to **3 times** with a **2-second fixed backoff** before routing to the DLT. |
-| K-19  | Deserialization errors **shall** be caught by ErrorHandlingDeserializer and routed directly to the DLT without triggering the retry policy. |
-| K-20  | Messages routed to a DLT **shall** retain the original topic name, partition, offset, and error details in the Kafka record headers. |
+| K-11  | The consumer **shall** listen on topic user.registered and dispatch a greeting-only welcome email upon receipt. |
+| K-12  | The welcome email **shall** use subject "Welcome to ShopeeFood!" and include the user's displayName in the body. |
+| K-13  | The welcome email **shall not** contain any OTP code. OTP is delivered through a separate consumer on a separate topic. |
+| K-14  | The consumer **shall** call EmailService.sendEmail(email, subject, body) to deliver the welcome email. |
+| K-15  | The consumer **shall** commit the offset (via Acknowledgment.acknowledge()) only after the email service call returns successfully. |
+| K-16  | If EmailService.sendEmail() throws, the consumer **shall** re-throw the exception to allow the DefaultErrorHandler to apply the retry policy. |
+| K-17  | The consumer **shall** log correlationId, userId, email, partition, and offset at INFO level upon receiving each event. |
+
+### 5.4 OTP Email Consumer (otp.verification.requested)
+
+| ID    | Requirement |
+|---|---|
+| K-18  | The consumer **shall** listen on topic otp.verification.requested and call EmailService.sendOtpEmail(email, otpCode) upon receipt. |
+| K-19  | The consumer **shall** commit the offset only after the email service call returns successfully. |
+| K-20  | If EmailService.sendOtpEmail() throws, the consumer **shall** re-throw the exception to allow the DefaultErrorHandler to apply the retry policy. |
+| K-21  | The consumer **shall** log correlationId, email, partition, and offset at INFO level upon receiving each event. |
+
+### 5.5 Error Recovery
+
+| ID    | Requirement |
+|---|---|
+| K-22  | The system **shall** retry failed consumer processing up to **3 times** with a **2-second fixed backoff** before routing to the DLT. |
+| K-23  | Deserialization errors **shall** be caught by ErrorHandlingDeserializer and routed directly to the DLT without triggering the retry policy. |
+| K-24  | Messages routed to a DLT **shall** retain the original topic name, partition, offset, and error details in the Kafka record headers. |
 
 ---
 
 ## 6. Flow Diagrams
 
-### 6.1 Registration with Combined Welcome + OTP Email
+### 6.1 Registration — Two Independent Event Streams
+
+On registration, `AuthService` triggers two **independent** side effects:
+1. Publishes `UserRegisteredEvent` directly → triggers welcome email
+2. Calls `UserOtpService.generateAndSendRegistrationOtp()` → which publishes `OtpVerificationRequestedEvent` → triggers OTP email
 
 ```
-Client            AuthService         UserOtpService      KafkaEventPublisher   KafkaNotificationConsumer  EmailService
-  |                   |                    |                      |                       |                     |
-  |- POST /register ->|                    |                      |                       |                     |
-  |                   |- userService.create()                     |                       |                     |
-  |                   |- generateAndSendOtp() ------------------>  |                       |                     |
-  |                   |   (returns otp)    |- publishOtpVerification(email, otp) -------> |                     |
-  |                   |                    |                      | [otp.verification.requested]                |
-  |                   |                    |                      |                       |- sendOtpEmail() --> |
-  |                   |- publishUserRegistered(user, otp) ------> |                       |                     |
-  |                   |                    |                      | [user.registered]     |                     |
-  |                   |                    |                      |                       |- sendEmail() -----> |
-  |<-- 201 { user } --|                    |                      |                       |  (welcome + OTP)   |
+Client            AuthService           UserOtpService      KafkaEventPublisher   KafkaNotificationConsumer   EmailService
+  |                   |                      |                      |                       |                      |
+  |- POST /register ->|                      |                      |                       |                      |
+  |                   |- userService.create()                       |                       |                      |
+  |                   |                      |                      |                       |                      |
+  |                   |---- publishUserRegistered(user) ----------->|                       |                      |
+  |                   |                      |                      |-> [user.registered] ->|                      |
+  |                   |                      |                      |                       |- sendEmail() ------> |
+  |                   |                      |                      |                       |  (greeting only)     |
+  |                   |                      |                      |                       |                      |
+  |                   |- generateAndSendOtp(email) --------------->  |                       |                      |
+  |                   |   (via UserOtpService)|                     |                       |                      |
+  |                   |                      |- publishOtpVerification(email, otp) -------> |                      |
+  |                   |                      |                      |-> [otp.verification.requested]               |
+  |                   |                      |                      |                       |- sendOtpEmail() ---> |
+  |                   |                      |                      |                       |  (OTP code only)     |
+  |<-- 201 { user } --|                      |                      |                       |                      |
 ```
 
-### 6.2 OTP Resend Flow
+
+### 6.2 OTP Resend — Reuses Same Event Stream
+
+OTP resend calls the exact same `UserOtpService.generateAndSendRegistrationOtp()` method, producing the same `OtpVerificationRequestedEvent`. No `UserRegisteredEvent` is published on resend.
 
 ```
-Client            AuthService         UserOtpService      KafkaEventPublisher   KafkaNotificationConsumer  EmailService
-  |                   |                    |                      |                       |                     |
-  |- POST /otp/send ->|                    |                      |                       |                     |
-  |                   |- generateAndSendOtp(email) -------------> |                       |                     |
-  |                   |                    |- publishOtpVerification(email, newOtp) ----> |                     |
-  |                   |                    |                      | [otp.verification.requested]                |
-  |                   |                    |                      |                       |- sendOtpEmail() --> |
-  |<-- 200 OK --------|                    |                      |                       |                     |
+Client            AuthService           UserOtpService      KafkaEventPublisher   KafkaNotificationConsumer   EmailService
+  |                   |                      |                      |                       |                      |
+  |- POST /otp/send ->|                      |                      |                       |                      |
+  |                   |- generateAndSendOtp(email) --------------->  |                       |                      |
+  |                   |                      |- publishOtpVerification(email, newOtp) -----> |                      |
+  |                   |                      |                      |-> [otp.verification.requested]               |
+  |                   |                      |                      |                       |- sendOtpEmail() ---> |
+  |<-- 200 OK --------|                      |                      |                       |                      |
 ```
 
 ### 6.3 Error Handling & DLT Flow
+
+Applies identically to both consumer listeners.
 
 ```
 KafkaNotificationConsumer           DefaultErrorHandler         Dead-Letter Topic
@@ -279,11 +318,20 @@ KafkaNotificationConsumer           DefaultErrorHandler         Dead-Letter Topi
 
 ### 6.4 Event Tracing by Correlation ID
 
+Each event has its own independent correlation ID. Tracing a full registration looks like:
+
 ```
-[PUBLISH]   [Kafka] Publishing UserRegisteredEvent  | correlationId=abc-123 | email=miku@example.com
-[BROKER]    [Kafka] UserRegisteredEvent sent         | correlationId=abc-123 | partition=1 | offset=42
-[CONSUME]   [Kafka] Received UserRegisteredEvent     | correlationId=abc-123 | partition=1 | offset=42
-[COMMIT]    [Kafka] UserRegisteredEvent processed    | correlationId=abc-123
+-- Stream 1: Welcome email (UserRegisteredEvent) --
+[PUBLISH]   [Kafka] Publishing UserRegisteredEvent  | correlationId=aaa-111 | userId=... | email=miku@example.com
+[BROKER]    [Kafka] UserRegisteredEvent sent         | correlationId=aaa-111 | partition=1 | offset=42
+[CONSUME]   [Kafka] Received UserRegisteredEvent     | correlationId=aaa-111 | partition=1 | offset=42
+[COMMIT]    [Kafka] UserRegisteredEvent processed    | correlationId=aaa-111
+
+-- Stream 2: OTP email (OtpVerificationRequestedEvent) --
+[PUBLISH]   [Kafka] Publishing OtpVerificationRequestedEvent | correlationId=bbb-222 | to=miku@example.com
+[BROKER]    [Kafka] OtpVerificationRequestedEvent sent       | correlationId=bbb-222 | partition=1 | offset=15
+[CONSUME]   [Kafka] Received OtpVerificationRequestedEvent   | correlationId=bbb-222 | partition=1 | offset=15
+[COMMIT]    [Kafka] OtpVerificationRequestedEvent processed  | correlationId=bbb-222
 ```
 
 ---
@@ -293,13 +341,15 @@ KafkaNotificationConsumer           DefaultErrorHandler         Dead-Letter Topi
 | ID    | Rule |
 |---|---|
 | BR-01 | Each domain event is **immutable** once published. Consumers must never modify or re-publish a received event payload. |
-| BR-02 | The correlationId is a UUID v4 generated at publish time and **must not** be reused across events. |
+| BR-02 | The correlationId is a UUID v4 generated at publish time and **must not** be reused across events. Each event (UserRegisteredEvent and OtpVerificationRequestedEvent) carries its **own independent** correlationId. |
 | BR-03 | Consumers **must** commit offsets only after successfully completing all side effects (e.g., email dispatch). |
 | BR-04 | The email field **must** be used as the Kafka message key — never null or an empty string. |
-| BR-05 | When UserRegisteredEvent.otpCode is non-null and non-blank, the welcome email **must** contain the OTP code. |
-| BR-06 | A single registration triggers **two** events: OtpVerificationRequestedEvent (from UserOtpService) and UserRegisteredEvent (from AuthService). Consumers are independent and must not deduplicate across topics. |
-| BR-07 | Messages routed to a DLT **must** be treated as an alert condition and investigated; no automatic re-processing is implemented. |
-| BR-08 | The Kafka producer **must** be configured with enable.idempotence=true and acks=all to guarantee exactly-once writes to the broker. |
+| BR-05 | UserRegisteredEvent **must not** carry an OTP code. Its sole purpose is to trigger the greeting email. |
+| BR-06 | OTP delivery is the sole responsibility of OtpVerificationRequestedEvent, produced exclusively by UserOtpService. AuthService **must not** embed OTP codes in UserRegisteredEvent. |
+| BR-07 | A registration triggers exactly **two** independent events on **two** separate topics. The welcome email and the OTP email are delivered independently with no ordering guarantee between them. |
+| BR-08 | OTP resend publishes **only** OtpVerificationRequestedEvent — no UserRegisteredEvent is published. |
+| BR-09 | Messages routed to a DLT **must** be treated as an alert condition and investigated; no automatic re-processing is implemented. |
+| BR-10 | The Kafka producer **must** be configured with enable.idempotence=true and acks=all to guarantee exactly-once writes to the broker. |
 
 ---
 
@@ -385,10 +435,12 @@ When a message is routed to a DLT, Spring Kafka attaches the following headers t
 | KafkaTopicConfig                | config.kafka      | Declares topics and KafkaAdmin bean                |
 | KafkaProducerConfig             | config.kafka      | Declares ProducerFactory and KafkaTemplate         |
 | KafkaConsumerConfig             | config.kafka      | Declares ConsumerFactory and listener container factory |
-| KafkaEventPublisher             | infras.messaging  | Domain-facing publisher API; wraps KafkaTemplate   |
-| KafkaNotificationConsumer       | infras.messaging  | Kafka listener for notification topics             |
-| OtpVerificationRequestedEvent   | events            | Event POJO — OTP dispatch                          |
-| UserRegisteredEvent             | events            | Event POJO — user registration + welcome email     |
+| KafkaEventPublisher             | infras.messaging  | Domain-facing publisher; publishUserRegistered() and publishOtpVerificationRequested() |
+| KafkaNotificationConsumer       | infras.messaging  | Kafka listener for both notification topics        |
+| OtpVerificationRequestedEvent   | events            | Event POJO — OTP dispatch (no registration coupling) |
+| UserRegisteredEvent             | events            | Event POJO — welcome greeting (no OTP field)       |
+| UserOtpService                  | auth.otp          | Generates OTP + publishes OtpVerificationRequestedEvent |
+| AuthService                     | auth              | Creates user + publishes UserRegisteredEvent; delegates OTP to UserOtpService |
 
 ---
 
@@ -402,10 +454,11 @@ When a message is routed to a DLT, Spring Kafka attaches the following headers t
 | NFR-04 | Resilience     | Deserialization failures (poison-pill messages) **must** be routed directly to the DLT without retrying. |
 | NFR-05 | Availability   | Kafka broker unavailability at application startup **must not** prevent the application from starting (fail-fast: false). |
 | NFR-06 | Availability   | Email (SMTP) failures **should** trigger the retry + DLT flow and **must not** cause data loss or application crashes. |
-| NFR-07 | Observability  | Every event **must** carry a UUID correlationId that is logged by both the publisher and the consumer, enabling end-to-end distributed tracing. |
+| NFR-07 | Observability  | Every event **must** carry a UUID correlationId logged by both publisher and consumer. Because registration produces two events, each **must** carry its own independent correlationId. |
 | NFR-08 | Observability  | Producer send confirmation (partition + offset) **must** be logged at DEBUG level. Consumer receipt and commit **must** be logged at INFO level. |
-| NFR-09 | Ordering       | All events for a given user email **must** be written to the same Kafka partition (email as message key) to preserve per-user ordering. |
-| NFR-10 | Security       | The spring.json.trusted.packages setting **must** be scoped to org.intern.shopeefoodclone.events to prevent deserialization of arbitrary classes. |
-| NFR-11 | Scalability    | Consumer concurrency **should** be set to match the number of partitions (default: 3) to enable maximum parallel throughput. |
-| NFR-12 | Scalability    | Topic replicas **should** be increased to 3 in production to tolerate broker failures without data loss. |
-| NFR-13 | Configurability| Kafka bootstrap servers **must** be externally configurable via the KAFKA_BOOTSTRAP_SERVERS environment variable. |
+| NFR-09 | Ordering       | All events for a given user email **must** be written to the same Kafka partition (email as message key) to preserve per-user ordering within each topic. |
+| NFR-10 | Decoupling     | AuthService **must not** be aware of OTP email delivery. OTP concerns are encapsulated entirely within UserOtpService and the otp.verification.requested topic. |
+| NFR-11 | Security       | The spring.json.trusted.packages setting **must** be scoped to org.intern.shopeefoodclone.events to prevent deserialization of arbitrary classes. |
+| NFR-12 | Scalability    | Consumer concurrency **should** be set to match the number of partitions (default: 3) to enable maximum parallel throughput. |
+| NFR-13 | Scalability    | Topic replicas **should** be increased to 3 in production to tolerate broker failures without data loss. |
+| NFR-14 | Configurability| Kafka bootstrap servers **must** be externally configurable via the KAFKA_BOOTSTRAP_SERVERS environment variable. |
