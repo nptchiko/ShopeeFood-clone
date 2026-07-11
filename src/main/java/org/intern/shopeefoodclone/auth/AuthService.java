@@ -12,6 +12,7 @@ import org.intern.shopeefoodclone.auth.otp.UserOtpService;
 import org.intern.shopeefoodclone.config.security.JwtService;
 import org.intern.shopeefoodclone.infras.cache.CacheService;
 import org.intern.shopeefoodclone.infras.messaging.KafkaEventPublisher;
+import org.intern.shopeefoodclone.infras.notification.EmailService;
 import org.intern.shopeefoodclone.shared.constant.DATE;
 import org.intern.shopeefoodclone.shared.exception.AppException;
 import org.intern.shopeefoodclone.shared.exception.ErrorCode;
@@ -66,11 +67,11 @@ class AuthService {
     @Transactional
     public UserResponse register(UserCreateRequest registerRequest) {
         UserResponse userResponse = userService.create(registerRequest);
-        String otp = userOtpService.generateAndSendRegistrationOtp(registerRequest.email());
 
-        // Publish domain event so notification consumer sends a welcome email asynchronously
         User newUser = userService.findByEmail(registerRequest.email());
         kafkaEventPublisher.publishUserRegistered(newUser);
+
+        userOtpService.generateAndSendRegistrationOtp(registerRequest.email());
 
         return userResponse;
     }
