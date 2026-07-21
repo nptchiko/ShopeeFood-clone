@@ -83,3 +83,10 @@ jwt:
   expiration:
     access-token: 900000 # 15 minutes in milliseconds
     refresh-token: 604800000 # 7 days in milliseconds
+
+logging:
+  level:
+    org.apache.kafka.common.config.AbstractConfig: OFF
+    org.apache.kafka.clients.producer.ProducerConfig: OFF
+    org.apache.kafka.clients.consumer.ConsumerConfig: OFF
+    org.apache.kafka.clients.admin.AdminClientConfig: OFF

@@ -47,18 +47,23 @@
     </logger>
 
     <!-- Config dump INFO chatter (printed on every client instantiation) -->
+    <logger name="org.apache.kafka.common.config.AbstractConfig"
+            level="OFF"
+            additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
     <logger name="org.apache.kafka.clients.admin.AdminClientConfig"
-            level="WARN"
+            level="OFF"
             additivity="false">
         <appender-ref ref="CONSOLE"/>
     </logger>
     <logger name="org.apache.kafka.clients.producer.ProducerConfig"
-            level="WARN"
+            level="OFF"
             additivity="false">
         <appender-ref ref="CONSOLE"/>
     </logger>
     <logger name="org.apache.kafka.clients.consumer.ConsumerConfig"
-            level="WARN"
+            level="OFF"
             additivity="false">
         <appender-ref ref="CONSOLE"/>
     </logger>
