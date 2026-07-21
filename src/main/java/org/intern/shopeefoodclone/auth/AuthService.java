@@ -11,7 +11,7 @@ import org.intern.shopeefoodclone.auth.otp.OtpRequest;
 import org.intern.shopeefoodclone.auth.otp.UserOtpService;
 import org.intern.shopeefoodclone.config.security.JwtService;
 import org.intern.shopeefoodclone.infras.messaging.KafkaEventPublisher;
-import org.intern.shopeefoodclone.shared.constant.DATE;
+import org.intern.shopeefoodclone.shared.constant.AppDate;
 import org.intern.shopeefoodclone.shared.exception.AppException;
 import org.intern.shopeefoodclone.shared.exception.ErrorCode;
 import org.intern.shopeefoodclone.user.*;
@@ -151,7 +151,7 @@ class AuthService {
         User user = userService.findByEmail(email); // Check if user exists
         userOtpService.verifyRegistrationOtp(email, otp);
 
-        user.setVerifiedAt(DATE.now());
+        user.setVerifiedAt(AppDate.now());
         userService.update(user.getId(), UserUpdateRequest.builder()
                     .verifiedAt(user.getVerifiedAt()).build());
 
