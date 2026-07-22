@@ -21,6 +21,18 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
 
+  mail:
+    host: ${MAIL_HOST}
+    port: 587
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enabled: true
+
   data:
     redis:
       host: ${REDIS_HOST:localhost}
@@ -28,8 +40,53 @@ spring:
       connect-timeout: 1000ms
       timeout: 1000ms
 
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9094}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+      acks: all                          # wait for all in-sync replicas to acknowledge
+      retries: 3
+      properties:
+        enable.idempotence: true         # exactly-once producer semantics
+        spring.json.add.type.headers: true
+        # --- Connection flood prevention ---
+        reconnect.backoff.ms: 1000           # wait 1 s before first reconnect attempt
+        reconnect.backoff.max.ms: 30000      # cap exponential backoff at 30 s
+        request.timeout.ms: 5000            # fail fast on individual requests
+        max.block.ms: 5000                   # don't block send() more than 5 s when broker is down
+    consumer:
+      group-id: shopee-food-notification-group
+      auto-offset-reset: earliest
+      enable-auto-commit: false          # manual ack for reliable processing
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      properties:
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
+        spring.json.trusted.packages: "org.intern.shopeefoodclone.events"
+        spring.json.use.type.headers: true
+        # --- Connection flood prevention ---
+        reconnect.backoff.ms: 1000           # wait 1 s before first reconnect attempt
+        reconnect.backoff.max.ms: 30000      # cap exponential backoff at 30 s
+        request.timeout.ms: 5000            # fail fast on individual requests
+        default.api.timeout.ms: 10000        # overall consumer API call timeout
+    admin:
+      fail-fast: false                   # don't crash the app on startup if Kafka is unavailable
+      properties:
+        reconnect.backoff.ms: 1000
+        reconnect.backoff.max.ms: 30000
+        request.timeout.ms: 5000
+        default.api.timeout.ms: 10000
+
 jwt:
   secret: ${JWT_SECRET}
   expiration:
     access-token: 900000 # 15 minutes in milliseconds
     refresh-token: 604800000 # 7 days in milliseconds
+
+logging:
+  level:
+    org.apache.kafka.common.config.AbstractConfig: OFF
+    org.apache.kafka.clients.producer.ProducerConfig: OFF
+    org.apache.kafka.clients.consumer.ConsumerConfig: OFF
+    org.apache.kafka.clients.admin.AdminClientConfig: OFF

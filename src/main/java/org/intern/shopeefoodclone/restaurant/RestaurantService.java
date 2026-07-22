@@ -7,6 +7,9 @@ import org.intern.shopeefoodclone.restaurant.menu.category.MenuCategory;
 import org.intern.shopeefoodclone.restaurant.menu.category.MenuCategoryRepository;
 import org.intern.shopeefoodclone.restaurant.menu.category.MenuCategoryResponse;
 import org.intern.shopeefoodclone.restaurant.menu.category.MenuCategoryService;
+import org.intern.shopeefoodclone.restaurant.search.RestaurantLocationProjection;
+import org.intern.shopeefoodclone.restaurant.search.RestaurantSearchQuery;
+import org.intern.shopeefoodclone.restaurant.search.RestaurantSearchResponse;
 import org.intern.shopeefoodclone.shared.api.PageResponse;
 import org.intern.shopeefoodclone.shared.exception.AppException;
 import org.intern.shopeefoodclone.shared.exception.ErrorCode;
@@ -80,12 +83,6 @@ public class RestaurantService {
             restaurant.setAddress(newAddress);
         }
 
-        // A restaurant cannot go live without a physical address
-        if (Boolean.TRUE.equals(request.isOpen()) && restaurant.getAddress() == null) {
-            throw new AppException(ErrorCode.DELIVERY_ADDRESS_NOT_FOUND,
-                    "Restaurant must have an address before being set to open.");
-        }
-
         restaurantMapper.update(restaurant, request);
         return restaurantMapper.toResponse(restaurantRepository.save(restaurant));
     }
@@ -103,5 +100,64 @@ public class RestaurantService {
     private Restaurant findRestaurantById(UUID id) {
         return restaurantRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.RESTAURANT_NOT_FOUND, "Restaurant not found with id: " + id));
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<RestaurantSearchResponse> geoSearchNearby(RestaurantSearchQuery query) {
+        Double lat = query.latitude();
+        Double lng = query.longitude();
+        Double radius = query.radiusInMeters() != null ? query.radiusInMeters() : 5000.0;
+
+        if (lat == null || lng == null) {
+            throw new AppException(ErrorCode.INVALID_INPUT, "Latitude and longitude must be provided for nearby search.");
+        }
+        if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+            throw new AppException(ErrorCode.INVALID_INPUT, "Invalid coordinates provided.");
+        }
+        if (radius <= 0 || radius > 50000) {
+            throw new AppException(ErrorCode.INVALID_INPUT, "Radius must be between 1 and 50000 meters.");
+        }
+
+        Pageable boundedPageable = PaginationUtils.validateAndBound(query.pageable());
+        Page<RestaurantLocationProjection> page = restaurantRepository.findNearby(
+                lat, lng, radius, query.isOpen(), query.keyword(), query.minRating(), boundedPageable);
+        return PaginationUtils.toPageResponse(page, RestaurantSearchResponse::fromProjection);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<RestaurantSearchResponse> geoSearchBoundingBox(RestaurantSearchQuery query) {
+        Double minLat = query.minLatitude();
+        Double minLng = query.minLongitude();
+        Double maxLat = query.maxLatitude();
+        Double maxLng = query.maxLongitude();
+
+        if (minLat == null || minLng == null || maxLat == null || maxLng == null) {
+            throw new AppException(ErrorCode.INVALID_INPUT, "All four bounding box coordinates (minLat, minLng, maxLat, maxLng) must be provided.");
+        }
+        if (minLat < -90 || maxLat > 90 || minLng < -180 || maxLng > 180 || minLat >= maxLat || minLng >= maxLng) {
+            throw new AppException(ErrorCode.INVALID_INPUT, "Invalid bounding box coordinates provided.");
+        }
+
+        Pageable boundedPageable = PaginationUtils.validateAndBound(query.pageable());
+        Page<RestaurantLocationProjection> page = restaurantRepository.findWithinBoundingBox(
+                minLat, minLng, maxLat, maxLng, query.isOpen(), query.keyword(), query.minRating(), boundedPageable);
+        return PaginationUtils.toPageResponse(page, RestaurantSearchResponse::fromProjection);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<RestaurantSearchResponse> geoSearchByDistance(RestaurantSearchQuery query) {
+        Double lat = query.latitude();
+        Double lng = query.longitude();
+        if (lat == null || lng == null) {
+            throw new AppException(ErrorCode.INVALID_INPUT, "Latitude and longitude must be provided.");
+        }
+        if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+            throw new AppException(ErrorCode.INVALID_INPUT, "Invalid coordinates provided.");
+        }
+
+        Pageable boundedPageable = PaginationUtils.validateAndBound(query.pageable());
+        Page<RestaurantLocationProjection> page = restaurantRepository.findAllSortedByDistance(
+                lat, lng, query.isOpen(), query.keyword(), query.minRating(), boundedPageable);
+        return PaginationUtils.toPageResponse(page, RestaurantSearchResponse::fromProjection);
     }
 }

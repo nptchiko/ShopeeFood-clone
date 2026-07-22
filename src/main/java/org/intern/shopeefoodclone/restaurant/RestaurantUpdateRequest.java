@@ -9,7 +9,6 @@ public record RestaurantUpdateRequest(
         @Size(max = 150, message = "Name must be at most 150 characters")
         String name,
 
-        @Size(max = 5, message = "Rating must be at most 5")
         BigDecimal rating,
 
         UUID addressId,

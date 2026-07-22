@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.intern.shopeefoodclone.infras.cache.CacheService;
-import org.intern.shopeefoodclone.infras.notification.EmailService;
+import org.intern.shopeefoodclone.infras.messaging.KafkaEventPublisher;
 import org.intern.shopeefoodclone.shared.exception.AppException;
 import org.intern.shopeefoodclone.shared.exception.ErrorCode;
 import org.intern.shopeefoodclone.user.UserService;
@@ -23,7 +23,7 @@ public class UserOtpService {
 
     UserOtpRepository userOtpRepository;
     CacheService cacheService;
-    EmailService emailService;
+    KafkaEventPublisher kafkaEventPublisher;
     UserService userService;
     SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final long OTP_TTL_SECONDS = 300L; // 5 minutes
@@ -55,7 +55,10 @@ public class UserOtpService {
         userOtpRepository.save(userOtp);
 
         log.info("Generated registration OTP {} for email {}", otp, email);
-        emailService.sendOtpEmail(email, otp);
+        // Publish event to Kafka — the KafkaNotificationConsumer will handle email delivery.
+        // This decouples OTP generation from SMTP and provides durability: if email
+        // delivery fails, Kafka retries up to 3 times before routing to the DLT.
+        kafkaEventPublisher.publishOtpVerificationRequested(email, otp);
         return otp;
     }
 

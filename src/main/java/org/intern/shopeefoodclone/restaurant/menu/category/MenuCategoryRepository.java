@@ -7,6 +7,9 @@ import java.util.List;
 import java.util.UUID;
 
 public interface MenuCategoryRepository extends JpaRepository<MenuCategory, UUID>, JpaSpecificationExecutor<MenuCategory> {
-    List<MenuCategory> findByRestaurantIdOrderBySortOrderAsc(UUID restaurantId);
+    int deleteAllByRestaurant_Id(UUID restaurantId);
+
     boolean existsByRestaurantIdAndName(UUID restaurantId, String name);
+
+    List<MenuCategory> findByRestaurantIdOrderBySortOrderAsc(UUID restaurantId);
 }

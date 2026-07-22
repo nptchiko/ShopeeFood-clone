@@ -3,6 +3,9 @@ package org.intern.shopeefoodclone.restaurant;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.intern.shopeefoodclone.restaurant.search.RestaurantSearchQuery;
+import org.intern.shopeefoodclone.restaurant.search.RestaurantSearchRequest;
+import org.intern.shopeefoodclone.restaurant.search.RestaurantSearchResponse;
 import org.intern.shopeefoodclone.shared.api.ApiResponse;
 import org.intern.shopeefoodclone.shared.api.PageResponse;
 import org.springframework.data.domain.Pageable;
@@ -20,15 +23,12 @@ public class RestaurantController {
 
     RestaurantService restaurantService;
 
-    @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<RestaurantResponse> create(@Valid @RequestBody RestaurantCreateRequest request) {
         return ApiResponse.created(restaurantService.create(request), "Restaurant created successfully");
     }
 
-    @GetMapping
-    public ApiResponse<PageResponse<RestaurantResponse>> getAll(
-            @RequestParam(required = false) String filter,
+    @GetMapping public ApiResponse<PageResponse<RestaurantResponse>> getAll( @RequestParam(required = false) String filter,
             @PageableDefault(sort = "name") Pageable pageable) {
         return ApiResponse.success(restaurantService.findAll(filter, pageable), "Restaurants retrieved successfully");
     }
@@ -47,5 +47,32 @@ public class RestaurantController {
     public ApiResponse<Void> delete(@PathVariable UUID id) {
         restaurantService.delete(id);
         return ApiResponse.success("Restaurant deleted successfully");
+    }
+
+    @PostMapping("/_search/nearby")
+    public ApiResponse<PageResponse<RestaurantSearchResponse>> searchNearby(
+            @Valid @RequestBody RestaurantSearchRequest request,
+            @PageableDefault Pageable pageable) {
+        return ApiResponse.success(
+                restaurantService.geoSearchNearby(RestaurantSearchQuery.from(request, pageable)),
+                "Nearby restaurants retrieved successfully");
+    }
+
+    @PostMapping("/_search/bounding-box")
+    public ApiResponse<PageResponse<RestaurantSearchResponse>> searchBoundingBox(
+            @Valid @RequestBody RestaurantSearchRequest request,
+            @PageableDefault Pageable pageable) {
+        return ApiResponse.success(
+                restaurantService.geoSearchBoundingBox(RestaurantSearchQuery.from(request, pageable)),
+                "Restaurants within bounding box retrieved successfully");
+    }
+
+    @PostMapping("/_search/by-distance")
+    public ApiResponse<PageResponse<RestaurantSearchResponse>> searchByDistance(
+            @Valid @RequestBody RestaurantSearchRequest request,
+            @PageableDefault Pageable pageable) {
+        return ApiResponse.success(
+                restaurantService.geoSearchByDistance(RestaurantSearchQuery.from(request, pageable)),
+                "Restaurants sorted by distance retrieved successfully");
     }
 }

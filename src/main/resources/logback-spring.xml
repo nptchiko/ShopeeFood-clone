@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!--
+        Inherit Spring Boot's default logging configuration (console pattern, colour, etc.)
+        so we only need to override what we want to change.
+    -->
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         KAFKA CLIENT — Suppress per-retry connection chatter
+
+         KafkaHealthChecker owns Kafka availability visibility now.
+         It emits exactly one log line on DOWN and one on UP transitions.
+         The loggers below are suppressed so they don't flood the console
+         during the 3-second probe window or between scheduled checks.
+
+         What you WILL see:
+           [Kafka] ⚠️  Kafka is UNREACHABLE at startup — broker: localhost:9094
+           [Kafka] ✅  Kafka reconnected successfully — broker: localhost:9094
+
+         What you WON'T see:
+           WARN  o.a.k.c.NetworkClient  - [Consumer] Error connecting to node … (×hundreds)
+           WARN  o.a.k.c.Metadata       - [Producer] Metadata update failed … (×hundreds)
+    ════════════════════════════════════════════════════════════════════ -->
+
+    <!-- Core TCP connection retry WARN — main source of the flood -->
+    <logger name="org.apache.kafka.clients.NetworkClient"
+            level="ERROR"
+            additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <!-- Metadata refresh failure WARN -->
+    <logger name="org.apache.kafka.clients.Metadata"
+            level="ERROR"
+            additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <!-- Admin client per-operation retry INFO/WARN -->
+    <logger name="org.apache.kafka.clients.admin.KafkaAdminClient"
+            level="ERROR"
+            additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <!-- Config dump INFO chatter (printed on every client instantiation) -->
+    <logger name="org.apache.kafka.common.config.AbstractConfig"
+            level="OFF"
+            additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    <logger name="org.apache.kafka.clients.admin.AdminClientConfig"
+            level="OFF"
+            additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    <logger name="org.apache.kafka.clients.producer.ProducerConfig"
+            level="OFF"
+            additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    <logger name="org.apache.kafka.clients.consumer.ConsumerConfig"
+            level="OFF"
+            additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <!-- Spring Kafka infrastructure — keep INFO so listener start/stop events show -->
+    <logger name="org.springframework.kafka"
+            level="INFO"
+            additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <!-- Application code — INFO by default, DEBUG available via config -->
+    <logger name="org.intern.shopeefoodclone"
+            level="INFO"
+            additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <!-- Root logger — defers to logging.level.root from application yaml -->
+    <springProperty scope="context" name="LOG_LEVEL_ROOT"
+                    source="logging.level.root" defaultValue="INFO"/>
+    <root level="${LOG_LEVEL_ROOT}">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+
+</configuration>

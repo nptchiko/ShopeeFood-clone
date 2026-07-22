@@ -1,0 +1,421 @@
+### ============================================================
+### ShopeeFood Clone — HTTP Request Scripts
+### ============================================================
+### Tool: IntelliJ HTTP Client  /  VS Code REST Client
+### Env:  select "local" in http-client.env.json
+###
+### Typical flow:
+###   1. Send OTP    → 2. Register  → 3. Verify OTP → 4. Login
+###   5. Copy accessToken into http-client.env.json
+###   6. Use protected endpoints freely
+### ============================================================
+
+
+# ──────────────────────────────────────────────────────────────
+# AUTH
+# ──────────────────────────────────────────────────────────────
+
+### [AUTH] Send OTP (must run before Register)
+POST {{baseUrl}}/api/auth/otp/send
+Content-Type: application/json
+
+{
+  "email": "miku@shopeefood.dev"
+}
+
+###
+
+### [AUTH] Register (triggers OTP + welcome email via Kafka)
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "name": "Miku Nakano",
+  "email": "miku@shopeefood.dev",
+  "phone": "0912345678",
+  "password": "Secure@123"
+}
+
+###
+
+### [AUTH] Verify OTP → returns access + refresh tokens
+POST {{baseUrl}}/api/auth/otp/verify
+Content-Type: application/json
+
+{
+  "email": "miku@shopeefood.dev",
+  "otp": "888159"
+}
+
+###
+
+### [AUTH] Login
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "miku@shopeefood.dev",
+  "password": "Secure@123"
+}
+
+###
+
+### [AUTH] Refresh access token (reads refresh_token cookie automatically)
+POST {{baseUrl}}/api/auth/refresh
+
+###
+
+### [AUTH] Logout
+POST {{baseUrl}}/api/auth/logout
+Authorization: Bearer {{accessToken}}
+
+
+# ──────────────────────────────────────────────────────────────
+# USERS
+# ──────────────────────────────────────────────────────────────
+
+### [USER] Create user (admin / direct creation)
+POST {{baseUrl}}/api/users
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "name": "Ichika Nakano",
+  "email": "ichika@shopeefood.dev",
+  "phone": "0987654321",
+  "password": "Secure@456"
+}
+
+###
+
+### [USER] Get all users
+GET {{baseUrl}}/api/users
+Authorization: Bearer {{accessToken}}
+
+###
+
+### [USER] Get user by ID
+GET {{baseUrl}}/api/users/{{userId}}
+Authorization: Bearer {{accessToken}}
+
+###
+
+### [USER] Update user
+PUT {{baseUrl}}/api/users/{{userId}}
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "name": "Miku Nakano Updated",
+  "phone": "0911111111"
+}
+
+###
+
+### [USER] Delete user
+DELETE {{baseUrl}}/api/users/{{userId}}
+Authorization: Bearer {{accessToken}}
+
+
+# ──────────────────────────────────────────────────────────────
+# USER ADDRESSES
+# ──────────────────────────────────────────────────────────────
+
+### [ADDRESS] Get my addresses
+GET {{baseUrl}}/api/users/me/addresses
+Authorization: Bearer {{accessToken}}
+
+###
+
+### [ADDRESS] Add address
+POST {{baseUrl}}/api/users/me/addresses
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "label": "Home",
+  "line1": "123 Nguyen Hue Boulevard",
+  "line2": "Apartment 4B",
+  "city": "Ho Chi Minh City",
+  "postalCode": "700000",
+  "isDefault": true,
+  "latitude": 10.7769,
+  "longitude": 106.7009
+}
+
+###
+
+### [ADDRESS] Get address by ID (me scope)
+GET {{baseUrl}}/api/users/me/addresses/{{addressId}}
+Authorization: Bearer {{accessToken}}
+
+###
+
+### [ADDRESS] Update address
+PUT {{baseUrl}}/api/users/me/addresses/{{addressId}}
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "label": "Office",
+  "line1": "456 Le Loi Street",
+  "city": "Ho Chi Minh City",
+  "isDefault": false,
+  "latitude": 10.7730,
+  "longitude": 106.6980
+}
+
+###
+
+### [ADDRESS] Delete address
+DELETE {{baseUrl}}/api/users/me/addresses/{{addressId}}
+Authorization: Bearer {{accessToken}}
+
+###
+
+### [ADDRESS] Get address by ID (admin scope)
+GET {{baseUrl}}/api/addresses/{{addressId}}
+Authorization: Bearer {{accessToken}}
+
+
+# ──────────────────────────────────────────────────────────────
+# RESTAURANTS
+# ──────────────────────────────────────────────────────────────
+
+### [RESTAURANT] Create restaurant
+### → Copy returned "id" into http-client.env.json as restaurantId
+POST {{baseUrl}}/api/restaurants
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "ownerId": "{{userId}}",
+  "name": "Nakano Kitchen",
+  "description": "Authentic home-style Vietnamese cuisine",
+  "logoUrl": "https://example.com/logos/nakano-kitchen.png",
+  "bannerUrl": "https://example.com/banners/nakano-kitchen.png",
+  "isOpen": true
+}
+
+###
+
+### [RESTAURANT] Get all restaurants
+GET {{baseUrl}}/api/restaurants
+Authorization: Bearer {{accessToken}}
+
+###
+
+### [RESTAURANT] Get restaurant by ID
+GET {{baseUrl}}/api/restaurants/{{restaurantId}}
+Authorization: Bearer {{accessToken}}
+
+###
+
+### [RESTAURANT] Update restaurant
+PUT {{baseUrl}}/api/restaurants/{{restaurantId}}
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "name": "Nakano Kitchen — Grand Opening",
+  "description": "Now serving breakfast & lunch!",
+  "isOpen": true,
+  "rating": 4.8,
+  "addressId": "{{addressId}}"
+}
+
+###
+
+### [RESTAURANT] Delete restaurant
+DELETE {{baseUrl}}/api/restaurants/{{restaurantId}}
+Authorization: Bearer {{accessToken}}
+
+
+# ──────────────────────────────────────────────────────────────
+# RESTAURANT GEOSEARCH (PostGIS)
+# ──────────────────────────────────────────────────────────────
+
+### [GEOSEARCH] Search nearby restaurants within 2 km of Nguyen Hue (District 1 center)
+POST {{baseUrl}}/api/restaurants/_search/nearby
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "location": {
+    "latitude": 10.740,
+    "longitude": 106.7036,
+    "radius_in_meters": 20000.0
+  },
+  "filters": {
+    "is_open_now": true
+  },
+  "pagination": {
+    "limit": 10,
+    "offset": 0
+  }
+}
+
+###
+
+### [GEOSEARCH] Search nearby restaurants with keyword filter ('Phở')
+POST {{baseUrl}}/api/restaurants/_search/nearby
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "location": {
+    "latitude": 10.7740,
+    "longitude": 106.7036,
+    "radius_in_meters": 5000.0
+  },
+  "query": "Phở"
+}
+
+###
+
+### [GEOSEARCH] Search restaurants within a bounding box (District 1 & District 3 Core Area)
+POST {{baseUrl}}/api/restaurants/_search/bounding-box
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "location": {
+    "min_latitude": 10.7700,
+    "min_longitude": 106.6900,
+    "max_latitude": 10.7850,
+    "max_longitude": 106.7050
+  },
+  "filters": {
+    "is_open_now": true
+  }
+}
+
+###
+
+### [GEOSEARCH] Search all restaurants sorted by nearest distance first
+POST {{baseUrl}}/api/restaurants/_search/by-distance
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "location": {
+    "latitude": 10.7740,
+    "longitude": 106.7036
+  },
+  "sort_by": "distance"
+}
+
+###
+
+### [GEOSEARCH] Search all restaurants sorted by nearest distance with keyword filter ('Cơm Tấm')
+POST {{baseUrl}}/api/restaurants/_search/by-distance
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "location": {
+    "latitude": 10.7740,
+    "longitude": 106.7036
+  },
+  "query": "Cơm Tấm",
+  "filters": {
+    "is_open_now": true
+  },
+  "sort_by": "distance"
+}
+
+
+### ──────────────────────────────────────────────────────────────
+### MENU CATEGORIES
+### ──────────────────────────────────────────────────────────────
+
+### [CATEGORY] Create category
+### → Copy returned "id" into http-client.env.json as categoryId
+POST {{baseUrl}}/api/restaurants/{{restaurantId}}/categories
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "name": "Appetizers",
+  "sortOrder": 1
+}
+
+###
+
+### [CATEGORY] Get categories for a restaurant
+GET {{baseUrl}}/api/restaurants/{{restaurantId}}/categories
+Authorization: Bearer {{accessToken}}
+
+###
+
+### [CATEGORY] Get category by ID
+GET {{baseUrl}}/api/categories/{{categoryId}}
+Authorization: Bearer {{accessToken}}
+
+###
+
+### [CATEGORY] Update category
+PUT {{baseUrl}}/api/categories/{{categoryId}}
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "name": "Starters",
+  "sortOrder": 2
+}
+
+###
+
+### [CATEGORY] Delete category
+DELETE {{baseUrl}}/api/categories/{{categoryId}}
+Authorization: Bearer {{accessToken}}
+
+
+# ──────────────────────────────────────────────────────────────
+# MENU ITEMS
+# ──────────────────────────────────────────────────────────────
+
+### [ITEM] Create menu item
+### → Copy returned "id" into http-client.env.json as itemId
+POST {{baseUrl}}/api/categories/{{categoryId}}/items
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "name": "Spring Rolls",
+  "description": "Crispy fried spring rolls with dipping sauce",
+  "price": 45000,
+  "imageUrl": "https://example.com/items/spring-rolls.png",
+  "isAvailable": true
+}
+
+###
+
+### [ITEM] Get items in a category
+GET {{baseUrl}}/api/categories/{{categoryId}}/items
+Authorization: Bearer {{accessToken}}
+
+###
+
+### [ITEM] Get item by ID
+GET {{baseUrl}}/api/items/{{itemId}}
+Authorization: Bearer {{accessToken}}
+
+###
+
+### [ITEM] Update menu item
+PUT {{baseUrl}}/api/items/{{itemId}}
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "name": "Crispy Spring Rolls",
+  "price": 49000,
+  "isAvailable": true
+}
+
+###
+
+### [ITEM] Delete menu item
+DELETE {{baseUrl}}/api/items/{{itemId}}
+Authorization: Bearer {{accessToken}}

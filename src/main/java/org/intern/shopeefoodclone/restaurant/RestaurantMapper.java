@@ -28,15 +28,7 @@ public interface RestaurantMapper {
             return null;
         }
         return new RestaurantDetailResponse(
-                restaurant.getId(),
-                restaurant.getOwner() != null ? restaurant.getOwner().getId() : null,
-                restaurant.getName(),
-                restaurant.getAddress() != null ? restaurant.getAddress().getId() : null,
-                restaurant.getDescription(),
-                restaurant.getLogoUrl(),
-                restaurant.getBannerUrl(),
-                restaurant.getRating(),
-                restaurant.getIsOpen(),
+                toResponse(restaurant),
                 menu != null ? menu : Collections.emptyList()
         );
     }

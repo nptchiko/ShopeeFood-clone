@@ -42,8 +42,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
             jwtService.validateToken(token, true);
 
-
-
         } catch (AppException appException) {
 
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);

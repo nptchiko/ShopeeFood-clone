@@ -10,15 +10,17 @@ services:
       - POSTGRES_HOST=db
       - POSTGRES_PORT=5432
       - REDIS_HOST=redis
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
     env_file:
       - .env.local
     depends_on:
       - db
       - redis
+      - kafka
 
   db:
     container_name: shopee-food-db
-    image: postgres:15-alpine
+    image: postgis/postgis:15-3.4-alpine
     restart: on-failure
     environment:
       POSTGRES_USER: user
@@ -38,6 +40,45 @@ services:
     volumes:
       - redis_data:/data
 
+  # Apache Kafka (KRaft mode — no Zookeeper required)
+  kafka:
+    container_name: shopee-food-kafka
+    image: confluentinc/cp-kafka:7.6.0
+    restart: on-failure
+    ports:
+      - "9092:9092"   # internal (app-to-kafka inside docker network)
+      - "9094:9094"   # external (host machine access for local dev tools)
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093,EXTERNAL://0.0.0.0:9094
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+
+  # Kafka UI — browse topics & messages at http://localhost:8090
+  kafka-ui:
+    container_name: shopee-food-kafka-ui
+    image: provectuslabs/kafka-ui:latest
+    restart: on-failure
+    ports:
+      - "8090:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: shopee-food-local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+    depends_on:
+      - kafka
+
 volumes:
   postgres_data:
   redis_data:
+  kafka_data:
