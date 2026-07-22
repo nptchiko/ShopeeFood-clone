@@ -371,15 +371,19 @@ Returns a single restaurant with its full menu tree (categories → items), orde
   "status": 200,
   "message": "Restaurant retrieved successfully",
   "data": {
-    "id": "uuid",
-    "ownerId": "uuid",
-    "name": "Phở Hà Nội",
-    "addressId": "uuid",
-    "description": "...",
-    "logoUrl": "...",
-    "bannerUrl": "...",
-    "rating": 4.50,
-    "isOpen": true,
+    "restaurant": {
+      "id": "uuid",
+      "ownerId": "uuid",
+      "name": "Phở Hà Nội",
+      "addressId": "uuid",
+      "description": "...",
+      "logoUrl": "...",
+      "bannerUrl": "...",
+      "rating": 4.50,
+      "isOpen": true,
+      "createdAt": "2026-07-07T04:30:00+07:00",
+      "updatedAt": "2026-07-07T04:30:00+07:00"
+    },
     "menu": [
       {
         "id": "uuid",

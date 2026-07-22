@@ -59,7 +59,7 @@ class RestaurantControllerTest {
 
         createRequest = new RestaurantCreateRequest(ownerId, "Burger King", "Fast food", "logo", "banner", true);
         response = new RestaurantResponse(restaurantId, ownerId, "Burger King", addressId, "Fast food", "logo", "banner", BigDecimal.ZERO, true, OffsetDateTime.now(), OffsetDateTime.now());
-        detailResponse = new RestaurantDetailResponse(restaurantId, ownerId, "Burger King", addressId, "Fast food", "logo", "banner", BigDecimal.ZERO, true, Collections.emptyList());
+        detailResponse = new RestaurantDetailResponse(response, Collections.emptyList());
     }
 
     @Test

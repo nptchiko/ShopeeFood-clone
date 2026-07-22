@@ -1,20 +1,14 @@
 package org.intern.shopeefoodclone.restaurant;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.Builder;
 import org.intern.shopeefoodclone.restaurant.menu.category.MenuCategoryResponse;
 
-import java.math.BigDecimal;
 import java.util.List;
-import java.util.UUID;
 
+@Builder
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public record RestaurantDetailResponse(
-        UUID id,
-        UUID ownerId,
-        String name,
-        UUID addressId,
-        String description,
-        String logoUrl,
-        String bannerUrl,
-        BigDecimal rating,
-        Boolean isOpen,
+        RestaurantResponse restaurant,
         List<MenuCategoryResponse> menu
 ) {}

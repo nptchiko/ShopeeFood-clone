@@ -44,7 +44,7 @@ Content-Type: application/json
 
 {
   "email": "miku@shopeefood.dev",
-  "otp": "348754"
+  "otp": "888159"
 }
 
 ###
@@ -220,7 +220,8 @@ Authorization: Bearer {{accessToken}}
   "name": "Nakano Kitchen — Grand Opening",
   "description": "Now serving breakfast & lunch!",
   "isOpen": true,
-  "rating": 4.8
+  "rating": 4.8,
+  "addressId": "{{addressId}}"
 }
 
 ###
@@ -231,8 +232,102 @@ Authorization: Bearer {{accessToken}}
 
 
 # ──────────────────────────────────────────────────────────────
-# MENU CATEGORIES
+# RESTAURANT GEOSEARCH (PostGIS)
 # ──────────────────────────────────────────────────────────────
+
+### [GEOSEARCH] Search nearby restaurants within 2 km of Nguyen Hue (District 1 center)
+POST {{baseUrl}}/api/restaurants/_search/nearby
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "location": {
+    "latitude": 10.740,
+    "longitude": 106.7036,
+    "radius_in_meters": 20000.0
+  },
+  "filters": {
+    "is_open_now": true
+  },
+  "pagination": {
+    "limit": 10,
+    "offset": 0
+  }
+}
+
+###
+
+### [GEOSEARCH] Search nearby restaurants with keyword filter ('Phở')
+POST {{baseUrl}}/api/restaurants/_search/nearby
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "location": {
+    "latitude": 10.7740,
+    "longitude": 106.7036,
+    "radius_in_meters": 5000.0
+  },
+  "query": "Phở"
+}
+
+###
+
+### [GEOSEARCH] Search restaurants within a bounding box (District 1 & District 3 Core Area)
+POST {{baseUrl}}/api/restaurants/_search/bounding-box
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "location": {
+    "min_latitude": 10.7700,
+    "min_longitude": 106.6900,
+    "max_latitude": 10.7850,
+    "max_longitude": 106.7050
+  },
+  "filters": {
+    "is_open_now": true
+  }
+}
+
+###
+
+### [GEOSEARCH] Search all restaurants sorted by nearest distance first
+POST {{baseUrl}}/api/restaurants/_search/by-distance
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "location": {
+    "latitude": 10.7740,
+    "longitude": 106.7036
+  },
+  "sort_by": "distance"
+}
+
+###
+
+### [GEOSEARCH] Search all restaurants sorted by nearest distance with keyword filter ('Cơm Tấm')
+POST {{baseUrl}}/api/restaurants/_search/by-distance
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "location": {
+    "latitude": 10.7740,
+    "longitude": 106.7036
+  },
+  "query": "Cơm Tấm",
+  "filters": {
+    "is_open_now": true
+  },
+  "sort_by": "distance"
+}
+
+
+### ──────────────────────────────────────────────────────────────
+### MENU CATEGORIES
+### ──────────────────────────────────────────────────────────────
 
 ### [CATEGORY] Create category
 ### → Copy returned "id" into http-client.env.json as categoryId

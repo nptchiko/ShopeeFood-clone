@@ -4,7 +4,7 @@ import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.intern.shopeefoodclone.shared.constant.DATE;
+import org.intern.shopeefoodclone.shared.constant.AppDate;
 import org.intern.shopeefoodclone.shared.exception.AppException;
 import org.intern.shopeefoodclone.shared.exception.ErrorCode;
 import org.intern.shopeefoodclone.auth.blacklist.TokenBlacklistService;
@@ -48,8 +48,8 @@ public class JwtService {
 
         return Jwts.builder()
                 .subject(userId)
-                .issuedAt(Date.from(DATE.now().toInstant()))
-                .expiration(Date.from(DATE.now().toInstant().plusSeconds(expiration)))
+                .issuedAt(Date.from(AppDate.now().toInstant()))
+                .expiration(Date.from(AppDate.now().toInstant().plusSeconds(expiration)))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .claim(isAccessTokenClaim, isAccessToken)
                 .id(UUID.randomUUID().toString())
@@ -74,6 +74,10 @@ public class JwtService {
             if (payload.get(isAccessTokenClaim) == null || (Boolean) payload.get(isAccessTokenClaim) != isAccessToken) {
                 throw new AppException(ErrorCode.INVALID_TOKEN, "Token type mismatch");
             }
+
+            if (extractTokenExpiration(token).before(Date.from(AppDate.now().toInstant())))
+                throw new AppException(ErrorCode.INVALID_TOKEN, "Token has expired");
+
 
         } catch (ExpiredJwtException e) {
             log.error("Token expired: {}", e.getMessage());
