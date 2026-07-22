@@ -38,9 +38,6 @@ public record RestaurantSearchRequest(
 
         @JsonProperty("query")
         @JsonAlias({"query", "keyword"})
-        String query,
+        String query
 
-        @JsonProperty("sort_by")
-        @JsonAlias({"sort_by", "sortBy"})
-        String sortBy
-) {}
+){}
