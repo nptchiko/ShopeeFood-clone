@@ -45,7 +45,7 @@ class CartServiceTest {
     @BeforeEach
     void setUp() {
         objectMapper = new ObjectMapper();
-        cartService = new CartService(cacheService, menuItemRepository, objectMapper);
+        cartService = new CartService(cacheService, menuItemRepository);
         itemId = UUID.randomUUID();
         restaurantId = UUID.randomUUID();
 
