@@ -1,0 +1,1652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShopeeFood Cart Sandbox</title>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    
+    <style>
+        /* Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V5 */
+        
+        :root {
+            /* Cobalt Theme Tokens */
+            --color-paper: oklch(98.5% 0.004 250);
+            --color-paper-2: oklch(96% 0.005 250);
+            --color-paper-3: oklch(93% 0.006 250);
+            --color-rule: oklch(91% 0.005 250);
+            --color-rule-2: oklch(82% 0.01 250);
+            --color-ink: oklch(24% 0.02 258);
+            --color-ink-2: oklch(34% 0.018 257);
+            --color-muted: oklch(55% 0.01 257);
+            --color-accent: oklch(58% 0.20 256);
+            --color-accent-ink: oklch(100% 0 0);
+            --color-graphite: oklch(20% 0.016 260);
+            --color-graphite-rule: oklch(28% 0.016 260);
+            --color-ok: oklch(72% 0.16 142);
+            --color-error: oklch(55% 0.22 29);
+
+            --font-display: "Space Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
+            --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
+            --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+            --radius-card: 10px;
+            --radius-input: 6px;
+            --radius-pill: 999px;
+
+            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+            --dur-short: 200ms;
+        }
+
+        /* Base Resets */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            overflow-x: clip;
+            background: var(--color-paper);
+            color: var(--color-ink);
+            font-family: var(--font-body);
+            -webkit-font-smoothing: antialiased;
+            line-height: 1.5;
+        }
+
+        h1, h2, h3, h4, h5 {
+            font-family: var(--font-display);
+            font-weight: 600;
+            font-style: normal; /* Typography purity — no italic headers */
+            letter-spacing: -0.02em;
+        }
+
+        a {
+            color: var(--color-accent);
+            text-decoration: none;
+            transition: color var(--dur-short) var(--ease-out);
+        }
+
+        a:hover {
+            color: oklch(50% 0.20 256);
+        }
+
+        button, input, select {
+            font-family: inherit;
+            font-size: inherit;
+            color: inherit;
+            outline: none;
+        }
+
+        /* Layout Grid */
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Bordered Nav */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            background: rgba(253, 253, 254, 0.8);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid var(--color-rule);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: var(--color-ink);
+        }
+
+        .navbar-brand span {
+            color: var(--color-accent);
+        }
+
+        .navbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .nav-link {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--color-ink-2);
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .nav-link:hover {
+            color: var(--color-accent);
+        }
+
+        .cmd-affordance {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.35rem 0.75rem;
+            background: var(--color-paper-2);
+            border: 1px solid var(--color-rule);
+            border-radius: var(--radius-input);
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--color-muted);
+            cursor: pointer;
+            transition: all var(--dur-short) var(--ease-out);
+        }
+
+        .cmd-affordance:hover {
+            border-color: var(--color-rule-2);
+            color: var(--color-ink-2);
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--color-ok);
+            font-weight: 600;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--color-ok);
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 8px var(--color-ok);
+        }
+
+        .status-badge.offline {
+            color: var(--color-muted);
+        }
+        .status-badge.offline .status-dot {
+            background: var(--color-muted);
+            box-shadow: none;
+        }
+
+        /* Workspace Grid */
+        .workspace {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            flex-grow: 1;
+            min-height: calc(100vh - 12rem);
+        }
+
+        /* Left Side (Panel) */
+        .main-panel {
+            padding: 2rem;
+            border-right: 1px solid var(--color-rule);
+            overflow-y: auto;
+        }
+
+        /* Right Side (Cart Side panel) */
+        .side-panel {
+            padding: 2rem;
+            background: var(--color-paper-2);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* Buttons & Controls */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.6rem 1.2rem;
+            font-weight: 500;
+            border-radius: var(--radius-input);
+            cursor: pointer;
+            transition: all var(--dur-short) var(--ease-out);
+            border: 1px solid transparent;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary {
+            background: var(--color-accent);
+            color: var(--color-accent-ink);
+        }
+
+        .btn-primary:hover {
+            background: oklch(50% 0.20 256);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border-color: var(--color-rule-2);
+            color: var(--color-ink-2);
+        }
+
+        .btn-secondary:hover {
+            background: var(--color-paper-3);
+            border-color: var(--color-ink-2);
+        }
+
+        .btn-danger {
+            background: transparent;
+            border-color: var(--color-error);
+            color: var(--color-error);
+        }
+
+        .btn-danger:hover {
+            background: oklch(95% 0.02 29);
+        }
+
+        .btn-sm {
+            padding: 0.35rem 0.75rem;
+            font-size: 0.8rem;
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .form-label {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--color-muted);
+            font-weight: 600;
+        }
+
+        .form-control {
+            padding: 0.6rem 0.8rem;
+            border: 1px solid var(--color-rule-2);
+            background: var(--color-paper);
+            border-radius: var(--radius-input);
+            color: var(--color-ink);
+            transition: all var(--dur-short) var(--ease-out);
+        }
+
+        .form-control:focus {
+            border-color: var(--color-accent);
+            box-shadow: 0 0 0 2px var(--color-paper-3);
+        }
+
+        /* Mono label style */
+        .mono-label {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--color-muted);
+        }
+
+        /* Auth Panel */
+        .auth-card {
+            max-width: 480px;
+            margin: 4rem auto;
+            background: var(--color-paper);
+            border: 1px solid var(--color-rule-2);
+            border-radius: var(--radius-card);
+            padding: 2.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            transition: border-color var(--dur-short);
+        }
+
+        .auth-card:hover {
+            border-color: var(--color-accent);
+        }
+
+        .auth-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--color-rule);
+        }
+
+        .auth-tab {
+            padding: 0.75rem 1.5rem;
+            font-family: var(--font-display);
+            font-weight: 500;
+            color: var(--color-muted);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all var(--dur-short);
+        }
+
+        .auth-tab.active {
+            color: var(--color-accent);
+            border-color: var(--color-accent);
+        }
+
+        /* Main Workspace Contents */
+        .sandbox-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--color-rule);
+            padding-bottom: 1rem;
+        }
+
+        .sandbox-title h2 {
+            font-size: 1.75rem;
+        }
+
+        .sandbox-title p {
+            color: var(--color-muted);
+            font-size: 0.9rem;
+            margin-top: 0.25rem;
+        }
+
+        /* Seeding Notice Card */
+        .seed-card {
+            background: var(--color-paper-2);
+            border: 1px dashed var(--color-rule-2);
+            border-radius: var(--radius-card);
+            padding: 2rem;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .seed-card h3 {
+            font-size: 1.25rem;
+        }
+
+        .seed-card p {
+            color: var(--color-ink-2);
+            font-size: 0.9rem;
+            max-width: 500px;
+        }
+
+        /* Restaurant Dropdown */
+        .restaurant-selector-container {
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .restaurant-select {
+            padding: 0.5rem 2rem 0.5rem 1rem;
+            border: 1px solid var(--color-rule-2);
+            background: var(--color-paper);
+            border-radius: var(--radius-input);
+            cursor: pointer;
+            font-weight: 500;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 1rem;
+        }
+
+        /* Menu Grid */
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .menu-item-card {
+            background: var(--color-paper);
+            border: 1px solid var(--color-rule);
+            border-radius: var(--radius-card);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: all var(--dur-short) var(--ease-out);
+        }
+
+        .menu-item-card:hover {
+            border-color: var(--color-accent);
+            transform: translateY(-2px);
+        }
+
+        .menu-item-img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            border-bottom: 1px solid var(--color-rule);
+        }
+
+        .menu-item-content {
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            flex-grow: 1;
+        }
+
+        .menu-item-name {
+            font-size: 1.1rem;
+            color: var(--color-ink);
+        }
+
+        .menu-item-desc {
+            font-size: 0.85rem;
+            color: var(--color-ink-2);
+            flex-grow: 1;
+        }
+
+        .menu-item-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 0.5rem;
+        }
+
+        .menu-item-price {
+            font-family: var(--font-mono);
+            font-weight: 600;
+            color: var(--color-ink);
+        }
+
+        .quantity-selector {
+            display: flex;
+            align-items: center;
+            border: 1px solid var(--color-rule-2);
+            border-radius: var(--radius-input);
+            overflow: hidden;
+            background: var(--color-paper-2);
+        }
+
+        .quantity-btn {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            font-weight: 600;
+            transition: background var(--dur-short);
+        }
+
+        .quantity-btn:hover {
+            background: var(--color-paper-3);
+        }
+
+        .quantity-input {
+            width: 32px;
+            text-align: center;
+            border: none;
+            background: transparent;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            -moz-appearance: textfield;
+        }
+        .quantity-input::-webkit-outer-spin-button,
+        .quantity-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+        }
+
+        /* Cart Visualizer */
+        .cart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--color-rule-2);
+            padding-bottom: 0.75rem;
+        }
+
+        .cart-restaurant-name {
+            font-size: 0.85rem;
+            color: var(--color-accent);
+            font-family: var(--font-mono);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+
+        .cart-empty {
+            text-align: center;
+            color: var(--color-muted);
+            padding: 3rem 1rem;
+            border: 1px dashed var(--color-rule);
+            border-radius: var(--radius-card);
+            font-size: 0.9rem;
+        }
+
+        .cart-items {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--color-rule);
+        }
+
+        .cart-item-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+        }
+
+        .cart-item-name {
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .cart-item-price {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--color-muted);
+        }
+
+        .cart-item-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .cart-item-total {
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            font-weight: 600;
+            width: 70px;
+            text-align: right;
+        }
+
+        .cart-summary {
+            border-top: 1px solid var(--color-rule-2);
+            padding-top: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .cart-summary-row {
+            display: flex;
+            justify-content: space-between;
+            font-weight: 500;
+        }
+
+        .cart-summary-total {
+            font-size: 1.15rem;
+            font-weight: 700;
+        }
+
+        .cart-summary-total-val {
+            font-family: var(--font-mono);
+        }
+
+        /* Code/Terminal Console (Graphite Band) */
+        .terminal-panel {
+            background: var(--color-graphite);
+            color: oklch(85% 0.01 250);
+            border-top: 1px solid var(--color-graphite-rule);
+            padding: 1.5rem 2rem;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            height: 16rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .terminal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--color-graphite-rule);
+            padding-bottom: 0.5rem;
+            color: var(--color-muted);
+        }
+
+        .terminal-header-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .terminal-header-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--color-accent);
+        }
+
+        .terminal-clear {
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: color var(--dur-short);
+        }
+
+        .terminal-clear:hover {
+            color: oklch(100% 0 0);
+        }
+
+        .terminal-logs {
+            overflow-y: auto;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .log-entry {
+            border-left: 2px solid var(--color-graphite-rule);
+            padding-left: 0.75rem;
+            line-height: 1.4;
+        }
+
+        .log-entry.log-post { border-color: var(--color-accent); }
+        .log-entry.log-get { border-color: var(--color-ok); }
+        .log-entry.log-delete { border-color: var(--color-error); }
+        .log-entry.log-put { border-color: oklch(75% 0.14 84); }
+
+        .log-meta {
+            font-size: 0.75rem;
+            color: var(--color-muted);
+            margin-bottom: 0.25rem;
+        }
+
+        .log-method {
+            font-weight: 600;
+            margin-right: 0.25rem;
+        }
+        .log-post .log-method { color: var(--color-accent); }
+        .log-get .log-method { color: var(--color-ok); }
+        .log-delete .log-method { color: var(--color-error); }
+        .log-put .log-method { color: oklch(75% 0.14 84); }
+
+        .log-url {
+            color: oklch(95% 0.01 250);
+        }
+
+        .log-status {
+            font-family: var(--font-mono);
+            font-weight: 600;
+            margin-left: 0.5rem;
+            padding: 0.05rem 0.25rem;
+            border-radius: 3px;
+            font-size: 0.7rem;
+        }
+        .status-2xx { background: oklch(35% 0.10 142); color: oklch(90% 0.05 142); }
+        .status-4xx, .status-5xx { background: oklch(30% 0.15 29); color: oklch(90% 0.05 29); }
+
+        .log-payload {
+            color: oklch(75% 0.01 250);
+            white-space: pre-wrap;
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+            background: oklch(16% 0.016 260);
+            padding: 0.4rem;
+            border-radius: 4px;
+        }
+
+        /* ⌘K Command Palette Overlay */
+        .cmd-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(16, 16, 20, 0.4);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding-top: 15vh;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity var(--dur-short) var(--ease-out);
+        }
+
+        .cmd-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .cmd-box {
+            background: var(--color-paper);
+            border: 1px solid var(--color-rule-2);
+            border-radius: var(--radius-card);
+            width: 100%;
+            max-width: 550px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            transform: translateY(-20px);
+            transition: transform var(--dur-short) var(--ease-out);
+        }
+
+        .cmd-overlay.active .cmd-box {
+            transform: translateY(0);
+        }
+
+        .cmd-search-container {
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid var(--color-rule);
+            padding: 0.75rem 1rem;
+        }
+
+        .cmd-search-icon {
+            color: var(--color-muted);
+            margin-right: 0.75rem;
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+        }
+
+        .cmd-search-input {
+            border: none;
+            background: transparent;
+            flex-grow: 1;
+            font-size: 1rem;
+            color: var(--color-ink);
+        }
+
+        .cmd-list {
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 0.5rem;
+        }
+
+        .cmd-item {
+            padding: 0.75rem 1rem;
+            border-radius: var(--radius-input);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            transition: background var(--dur-short);
+        }
+
+        .cmd-item:hover, .cmd-item.selected {
+            background: var(--color-paper-3);
+        }
+
+        .cmd-item-title {
+            font-weight: 500;
+            color: var(--color-ink-2);
+        }
+
+        .cmd-item-shortcut {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--color-muted);
+            background: var(--color-paper-2);
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            border: 1px solid var(--color-rule);
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .workspace {
+                grid-template-columns: 1fr;
+            }
+
+            .main-panel {
+                border-right: none;
+                border-bottom: 1px solid var(--color-rule);
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-brand">
+            <span>ShopeeFood</span> Cart Sandbox
+        </div>
+        <div class="navbar-actions">
+            <div class="cmd-affordance" onclick="openCmdPalette()">
+                ⌘K Console
+            </div>
+            <div id="statusBadge" class="status-badge offline">
+                <span class="status-dot"></span> <span id="statusText">Disconnected</span>
+            </div>
+            <div id="navUserEmail" class="nav-link" style="display: none;"></div>
+            <div id="logoutBtn" class="nav-link" onclick="logout()" style="display: none;">Logout</div>
+        </div>
+    </nav>
+
+    <!-- Content Workspace -->
+    <div class="workspace">
+        <!-- Main Panel (Left) -->
+        <main class="main-panel">
+            <!-- Auth screen (shown when unauthenticated) -->
+            <div id="authPanel">
+                <div class="auth-card">
+                    <div class="auth-tabs">
+                        <div class="auth-tab active" onclick="switchAuthTab('login')">Login</div>
+                        <div class="auth-tab" onclick="switchAuthTab('register')">Register</div>
+                    </div>
+                    
+                    <div id="loginForm">
+                        <div class="form-group">
+                            <label class="form-label">Email Address</label>
+                            <input type="email" id="loginEmail" class="form-control" value="demo@example.com" placeholder="demo@example.com">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Password</label>
+                            <input type="password" id="loginPassword" class="form-control" value="Password123!" placeholder="Enter password">
+                        </div>
+                        <button class="btn btn-primary" onclick="handleLogin()" style="width: 100%; margin-top: 0.5rem;">Authenticate</button>
+                    </div>
+
+                    <div id="registerForm" style="display: none;">
+                        <div class="form-group">
+                            <label class="form-label">Full Name</label>
+                            <input type="text" id="registerName" class="form-control" value="Demo User" placeholder="e.g. Alex Green">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Email Address</label>
+                            <input type="email" id="registerEmail" class="form-control" value="demo@example.com" placeholder="e.g. user@domain.com">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Phone Number</label>
+                            <input type="text" id="registerPhone" class="form-control" value="0987654321" placeholder="e.g. 0987654321">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Password</label>
+                            <input type="password" id="registerPassword" class="form-control" value="Password123!" placeholder="Uppercase, lowercase, digit, spec symbol">
+                            <span class="mono-label" style="font-size: 0.65rem; text-transform: none; margin-top: 0.25rem;">Must be 8-20 chars with uppercase, lowercase, digit, and special symbol.</span>
+                        </div>
+                        <button class="btn btn-primary" onclick="handleRegister()" style="width: 100%; margin-top: 0.5rem;">Create Account</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard view (shown when authenticated) -->
+            <div id="dashboardPanel" style="display: none;">
+                <div class="sandbox-header">
+                    <div class="sandbox-title">
+                        <h2>Sandbox Restaurant Menu</h2>
+                        <p>Interact with items below to add them to your persistent Redis cart.</p>
+                    </div>
+                    <button class="btn btn-secondary btn-sm" onclick="seedDatabase()">Seed Sandbox Data</button>
+                </div>
+
+                <!-- Seeding message if database empty -->
+                <div id="seedingNotice" class="seed-card" style="display: none;">
+                    <h3>No Restaurants Found</h3>
+                    <p>Before you can test adding items to the cart, we need a restaurant and menu items in the database. Click the button below to automatically seed default restaurant and menu categories.</p>
+                    <button class="btn btn-primary" onclick="seedDatabase()">Auto-Seed Sandbox Data</button>
+                </div>
+
+                <div id="menuContainer">
+                    <div class="restaurant-selector-container">
+                        <span class="mono-label">Active Restaurant:</span>
+                        <select id="restaurantSelect" class="restaurant-select" onchange="loadMenuForSelectedRestaurant()">
+                            <!-- Seeded dynamically -->
+                        </select>
+                    </div>
+
+                    <div id="menuGrid" class="menu-grid">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Cart Panel (Right) -->
+        <aside class="side-panel">
+            <div class="cart-header">
+                <h3>Shopping Cart</h3>
+                <span id="cartResName" class="cart-restaurant-name">No Active Restaurant</span>
+            </div>
+
+            <div id="cartContent">
+                <!-- Cart list dynamic rendering -->
+                <div class="cart-empty">
+                    Your cart is empty. Add menu items to get started.
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Terminal logs panel (Bottom) -->
+    <footer class="terminal-panel">
+        <div class="terminal-header">
+            <div class="terminal-header-title">
+                <span class="terminal-header-dot"></span> Live API Visualizer
+            </div>
+            <div class="terminal-clear" onclick="clearTerminalLogs()">Clear Logs</div>
+        </div>
+        <div id="terminalLogs" class="terminal-logs">
+            <div class="log-entry" style="border-color: var(--color-muted);">
+                <div class="log-meta">System initialized</div>
+                <div>Sandbox console ready. Authenticate to begin sending API requests.</div>
+            </div>
+        </div>
+    </footer>
+</div>
+
+<!-- ⌘K Overlay -->
+<div id="cmdOverlay" class="cmd-overlay" onclick="closeCmdPaletteOnBackdrop(event)">
+    <div class="cmd-box">
+        <div class="cmd-search-container">
+            <span class="cmd-search-icon">⌘</span>
+            <input type="text" id="cmdInput" class="cmd-search-input" placeholder="Type a command..." oninput="filterCommands()" onkeydown="handleCmdKeydown(event)">
+        </div>
+        <div id="cmdList" class="cmd-list">
+            <!-- Dynamic commands -->
+        </div>
+    </div>
+</div>
+
+<script>
+    // System state
+    let token = localStorage.getItem('token') || '';
+    let currentUser = null;
+    let selectedRestaurantId = null;
+    let currentAuthTab = 'login';
+    let availableCommands = [];
+    let selectedCmdIndex = 0;
+
+    // Initialize sandbox
+    window.addEventListener('load', () => {
+        setupCommands();
+        if (token) {
+            decodeAndStoreUser();
+            showDashboard();
+        } else {
+            showAuth();
+        }
+        setupKeyboardShortcuts();
+    });
+
+    function showAuth() {
+        document.getElementById('authPanel').style.display = 'block';
+        document.getElementById('dashboardPanel').style.display = 'none';
+        document.getElementById('navUserEmail').style.display = 'none';
+        document.getElementById('logoutBtn').style.display = 'none';
+        updateStatus(false, 'Unauthenticated');
+    }
+
+    function showDashboard() {
+        document.getElementById('authPanel').style.display = 'none';
+        document.getElementById('dashboardPanel').style.display = 'block';
+        document.getElementById('navUserEmail').style.display = 'block';
+        document.getElementById('navUserEmail').innerText = currentUser.email;
+        document.getElementById('logoutBtn').style.display = 'block';
+        updateStatus(true, 'Live');
+        loadRestaurants();
+        fetchCart();
+    }
+
+    function updateStatus(isLive, text) {
+        const badge = document.getElementById('statusBadge');
+        const badgeText = document.getElementById('statusText');
+        if (isLive) {
+            badge.className = 'status-badge';
+            badgeText.innerText = text;
+        } else {
+            badge.className = 'status-badge offline';
+            badgeText.innerText = text;
+        }
+    }
+
+    function decodeAndStoreUser() {
+        try {
+            const payload = parseJwt(token);
+            currentUser = {
+                id: payload.sub,
+                email: payload.sub // sub is the subject username (email in our case or id)
+            };
+            
+            // Check if we can infer email from payload
+            if (payload.email) {
+                currentUser.email = payload.email;
+            }
+        } catch(e) {
+            logTerminal('Error parsing authentication token', 'SYSTEM', '', e.toString(), 500);
+            logout();
+        }
+    }
+
+    function parseJwt(token) {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return JSON.parse(jsonPayload);
+    }
+
+    // Switch between Login and Register tabs
+    function switchAuthTab(tab) {
+        currentAuthTab = tab;
+        const tabs = document.querySelectorAll('.auth-tab');
+        tabs[0].className = tab === 'login' ? 'auth-tab active' : 'auth-tab';
+        tabs[1].className = tab === 'register' ? 'auth-tab active' : 'auth-tab';
+        
+        document.getElementById('loginForm').style.display = tab === 'login' ? 'block' : 'none';
+        document.getElementById('registerForm').style.display = tab === 'register' ? 'block' : 'none';
+    }
+
+    // API Visualizer Logs Logger
+    function logTerminal(message, method, url, payload, status) {
+        const logsContainer = document.getElementById('terminalLogs');
+        const time = new Date().toLocaleTimeString();
+        
+        const entry = document.createElement('div');
+        entry.className = `log-entry log-${method.toLowerCase()}`;
+        
+        let statusBadge = '';
+        if (status) {
+            const statusClass = status >= 200 && status < 300 ? 'status-2xx' : 'status-4xx';
+            statusBadge = `<span class="log-status ${statusClass}">${status}</span>`;
+        }
+
+        let payloadStr = '';
+        if (payload) {
+            if (typeof payload === 'object') {
+                payloadStr = `<div class="log-payload">${JSON.stringify(payload, null, 2)}</div>`;
+            } else {
+                payloadStr = `<div class="log-payload">${payload}</div>`;
+            }
+        }
+
+        entry.innerHTML = `
+            <div class="log-meta">[${time}] <span class="log-method">${method}</span> <span class="log-url">${url}</span>${statusBadge}</div>
+            <div>${message}</div>
+            ${payloadStr}
+        `;
+        
+        logsContainer.appendChild(entry);
+        logsContainer.scrollTop = logsContainer.scrollHeight;
+    }
+
+    function clearTerminalLogs() {
+        document.getElementById('terminalLogs').innerHTML = '';
+    }
+
+    // Auth Calls
+    async function handleLogin() {
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
+
+        const reqBody = { email, password };
+        logTerminal('Attempting authentication login...', 'POST', '/api/auth/login', reqBody);
+
+        try {
+            const res = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(reqBody)
+            });
+            const data = await res.json();
+            
+            logTerminal('Auth response received', 'POST', '/api/auth/login', data, res.status);
+
+            if (res.ok && data.data && data.data.access_token) {
+                token = data.data.access_token;
+                localStorage.setItem('token', token);
+                decodeAndStoreUser();
+                showDashboard();
+            } else {
+                alert('Authentication failed: ' + (data.message || 'Check credentials'));
+            }
+        } catch (e) {
+            logTerminal('Authentication Request Error', 'POST', '/api/auth/login', e.toString(), 500);
+            alert('Request failed. Make sure the Spring Boot server is running.');
+        }
+    }
+
+    async function handleRegister() {
+        const name = document.getElementById('registerName').value;
+        const email = document.getElementById('registerEmail').value;
+        const phone = document.getElementById('registerPhone').value;
+        const password = document.getElementById('registerPassword').value;
+
+        const reqBody = { name, email, phone, password };
+        logTerminal('Registering new sandbox user...', 'POST', '/api/auth/register', reqBody);
+
+        try {
+            const res = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(reqBody)
+            });
+            const data = await res.json();
+
+            logTerminal('Register response received', 'POST', '/api/auth/register', data, res.status);
+
+            if (res.ok) {
+                alert('Registration successful! Please login with your details.');
+                switchAuthTab('login');
+                document.getElementById('loginEmail').value = email;
+                document.getElementById('loginPassword').value = password;
+            } else {
+                alert('Registration failed: ' + (data.message || 'Check validation patterns'));
+            }
+        } catch (e) {
+            logTerminal('Registration Request Error', 'POST', '/api/auth/register', e.toString(), 500);
+        }
+    }
+
+    function logout() {
+        token = '';
+        currentUser = null;
+        localStorage.removeItem('token');
+        showAuth();
+        logTerminal('User logged out. Session deleted.', 'SYSTEM', '');
+    }
+
+    // Get Auth Headers
+    function getHeaders() {
+        return {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        };
+    }
+
+    // Seed Data helpers
+    async function seedDatabase() {
+        if (!currentUser) return;
+        logTerminal('Seeding database with default sandbox restaurant and items...', 'SYSTEM', '');
+
+        try {
+            // 1. Create Restaurant
+            const resReq = {
+                ownerId: currentUser.id,
+                name: 'KFC (Sandbox)',
+                description: 'Original recipe crispy chicken and gourmet sides.',
+                logoUrl: '/images/fried_chicken.jpg',
+                bannerUrl: '/images/burger.jpg',
+                isOpen: true
+            };
+            
+            const resResponse = await fetch('/api/restaurants', {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify(resReq)
+            });
+            const resData = await resResponse.json();
+            logTerminal('Created restaurant', 'POST', '/api/restaurants', resData, resResponse.status);
+
+            if (!resResponse.ok) {
+                alert('Failed to seed restaurant: ' + resData.message);
+                return;
+            }
+
+            const restaurantId = resData.data.id;
+
+            // 2. Create Category
+            const catReq = { name: 'Fried Chicken Menu', sortOrder: 1 };
+            const catResponse = await fetch(`/api/restaurants/${restaurantId}/categories`, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify(catReq)
+            });
+            const catData = await catResponse.json();
+            logTerminal('Created category', 'POST', `/api/restaurants/${restaurantId}/categories`, catData, catResponse.status);
+
+            const categoryId = catData.data.id;
+
+            // 3. Create items
+            const item1 = {
+                name: 'Crispy Fried Chicken Combo',
+                description: '3 pieces of spicy golden crispy fried chicken with garlic mayo dip.',
+                price: 50000.00,
+                imageUrl: '/images/fried_chicken.jpg',
+                isAvailable: true
+            };
+            const item2 = {
+                name: 'Gourmet Cheeseburger combo',
+                description: 'A premium cheeseburger stack with double cheese, burger sauce, and fries.',
+                price: 65000.00,
+                imageUrl: '/images/burger.jpg',
+                isAvailable: true
+            };
+
+            const itemRes1 = await fetch(`/api/categories/${categoryId}/items`, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify(item1)
+            });
+            logTerminal('Created item 1', 'POST', `/api/categories/${categoryId}/items`, await itemRes1.json(), itemRes1.status);
+
+            const itemRes2 = await fetch(`/api/categories/${categoryId}/items`, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify(item2)
+            });
+            logTerminal('Created item 2', 'POST', `/api/categories/${categoryId}/items`, await itemRes2.json(), itemRes2.status);
+
+            alert('Database seeded successfully!');
+            loadRestaurants();
+        } catch (e) {
+            logTerminal('Seeding Error', 'SYSTEM', '', e.toString(), 500);
+            alert('Failed to seed mock data. Check terminal log for stack traces.');
+        }
+    }
+
+    // Load Restaurants
+    async function loadRestaurants() {
+        logTerminal('Fetching restaurants list...', 'GET', '/api/restaurants');
+        try {
+            const res = await fetch('/api/restaurants', {
+                headers: getHeaders()
+            });
+            const data = await res.json();
+            logTerminal('Restaurants retrieved', 'GET', '/api/restaurants', data, res.status);
+
+            const select = document.getElementById('restaurantSelect');
+            const notice = document.getElementById('seedingNotice');
+            const menuContainer = document.getElementById('menuContainer');
+
+            select.innerHTML = '';
+
+            if (res.ok && data.data && data.data.content && data.data.content.length > 0) {
+                notice.style.display = 'none';
+                menuContainer.style.display = 'block';
+
+                data.data.content.forEach(restaurant => {
+                    const opt = document.createElement('option');
+                    opt.value = restaurant.id;
+                    opt.innerText = restaurant.name;
+                    select.appendChild(opt);
+                });
+                
+                selectedRestaurantId = data.data.content[0].id;
+                loadMenuForSelectedRestaurant();
+            } else {
+                notice.style.display = 'flex';
+                menuContainer.style.display = 'none';
+            }
+        } catch(e) {
+            logTerminal('Fetch Restaurants Error', 'GET', '/api/restaurants', e.toString(), 500);
+        }
+    }
+
+    function loadMenuForSelectedRestaurant() {
+        const select = document.getElementById('restaurantSelect');
+        selectedRestaurantId = select.value;
+        if (selectedRestaurantId) {
+            loadMenu(selectedRestaurantId);
+        }
+    }
+
+    // Load Menu Categories and items
+    async function loadMenu(restaurantId) {
+        logTerminal(`Fetching categories for restaurant ${restaurantId}...`, 'GET', `/api/restaurants/${restaurantId}/categories`);
+        try {
+            const catRes = await fetch(`/api/restaurants/${restaurantId}/categories`, {
+                headers: getHeaders()
+            });
+            const catData = await catRes.json();
+            logTerminal('Categories retrieved', 'GET', `/api/restaurants/${restaurantId}/categories`, catData, catRes.status);
+
+            const grid = document.getElementById('menuGrid');
+            grid.innerHTML = '';
+
+            if (catRes.ok && catData.data && catData.data.content) {
+                // Fetch items for each category
+                for (const cat of catData.data.content) {
+                    await loadItemsForCategory(cat.id, grid);
+                }
+            }
+        } catch (e) {
+            logTerminal('Fetch Categories Error', 'GET', '', e.toString(), 500);
+        }
+    }
+
+    async function loadItemsForCategory(categoryId, container) {
+        logTerminal(`Fetching items for category ${categoryId}...`, 'GET', `/api/categories/${categoryId}/items`);
+        try {
+            const itemRes = await fetch(`/api/categories/${categoryId}/items`, {
+                headers: getHeaders()
+            });
+            const itemData = await itemRes.json();
+            logTerminal('Items retrieved', 'GET', `/api/categories/${categoryId}/items`, itemData, itemRes.status);
+
+            if (itemRes.ok && itemData.data && itemData.data.content) {
+                itemData.data.content.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = 'menu-item-card';
+
+                    const imageUrl = item.imageUrl || '/images/fried_chicken.jpg';
+
+                    card.innerHTML = `
+                        <img src="${imageUrl}" alt="${item.name}" class="menu-item-img">
+                        <div class="menu-item-content">
+                            <h4 class="menu-item-name">${item.name}</h4>
+                            <p class="menu-item-desc">${item.description || ''}</p>
+                            <div class="menu-item-footer">
+                                <span class="menu-item-price">${formatVND(item.price)}</span>
+                                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                    <div class="quantity-selector">
+                                        <button class="quantity-btn" onclick="adjustCardQuantity('${item.id}', -1)">-</button>
+                                        <input type="number" id="qty-${item.id}" class="quantity-input" value="1" min="1" readonly>
+                                        <button class="quantity-btn" onclick="adjustCardQuantity('${item.id}', 1)">+</button>
+                                    </div>
+                                    <button class="btn btn-primary btn-sm" onclick="addToCart('${item.id}')">Add</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            }
+        } catch (e) {
+            logTerminal('Fetch Items Error', 'GET', '', e.toString(), 500);
+        }
+    }
+
+    function adjustCardQuantity(itemId, val) {
+        const input = document.getElementById(`qty-${itemId}`);
+        let current = parseInt(input.value) || 1;
+        current += val;
+        if (current < 1) current = 1;
+        input.value = current;
+    }
+
+    // Format currency to VND
+    function formatVND(value) {
+        return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
+    }
+
+    // Cart Operations
+    async function fetchCart() {
+        logTerminal('Fetching shopping cart...', 'GET', '/api/cart');
+        try {
+            const res = await fetch('/api/cart', {
+                headers: getHeaders()
+            });
+            const data = await res.json();
+            logTerminal('Cart payload retrieved', 'GET', '/api/cart', data, res.status);
+
+            if (res.ok && data.data) {
+                renderCart(data.data);
+            }
+        } catch (e) {
+            logTerminal('Fetch Cart Error', 'GET', '/api/cart', e.toString(), 500);
+        }
+    }
+
+    function renderCart(cart) {
+        const cartContent = document.getElementById('cartContent');
+        const cartResName = document.getElementById('cartResName');
+        
+        if (!cart.items || cart.items.length === 0) {
+            cartResName.innerText = 'No Active Restaurant';
+            cartContent.innerHTML = `
+                <div class="cart-empty">
+                    Your cart is empty. Add menu items to get started.
+                </div>
+            `;
+            return;
+        }
+
+        cartResName.innerText = cart.restaurantName || 'Sandbox Restaurant';
+
+        let itemsHtml = '';
+        cart.items.forEach(item => {
+            const total = item.price * item.quantity;
+            itemsHtml += `
+                <div class="cart-item">
+                    <div class="cart-item-info">
+                        <div class="cart-item-name">${item.itemName}</div>
+                        <div class="cart-item-price">${formatVND(item.price)}</div>
+                    </div>
+                    <div class="cart-item-actions">
+                        <div class="quantity-selector">
+                            <button class="quantity-btn" onclick="updateCartQuantity('${item.itemId}', ${item.quantity - 1})">-</button>
+                            <span class="quantity-input" style="line-height:28px">${item.quantity}</span>
+                            <button class="quantity-btn" onclick="updateCartQuantity('${item.itemId}', ${item.quantity + 1})">+</button>
+                        </div>
+                        <div class="cart-item-total">${formatVND(total)}</div>
+                        <button class="btn btn-danger btn-sm" onclick="removeItem('${item.itemId}')" style="padding: 0.2rem 0.5rem;">✕</button>
+                    </div>
+                </div>
+            `;
+        });
+
+        cartContent.innerHTML = `
+            <div class="cart-items">
+                ${itemsHtml}
+            </div>
+            <div class="cart-summary">
+                <div class="cart-summary-row cart-summary-total">
+                    <span>Total Amount</span>
+                    <span class="cart-summary-total-val">${formatVND(cart.totalAmount)}</span>
+                </div>
+                <button class="btn btn-danger" onclick="clearCart()" style="width: 100%; margin-top: 0.5rem">Clear Cart Sandbox</button>
+            </div>
+        `;
+    }
+
+    async function addToCart(itemId) {
+        const qtyInput = document.getElementById(`qty-${itemId}`);
+        const quantity = parseInt(qtyInput.value) || 1;
+
+        const reqBody = { itemId, quantity };
+        logTerminal('Sending add item to cart API request...', 'POST', '/api/cart/items', reqBody);
+
+        try {
+            const res = await fetch('/api/cart/items', {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify(reqBody)
+            });
+            const data = await res.json();
+            logTerminal('Add to cart response received', 'POST', '/api/cart/items', data, res.status);
+
+            if (res.ok && data.data) {
+                renderCart(data.data);
+                qtyInput.value = 1; // Reset card quantity
+            } else {
+                if (data.status === 40044) {
+                    // DIFFERENT_RESTAURANT_IN_CART
+                    if (confirm('Your cart contains items from a different restaurant. Would you like to clear your cart and start a new order?')) {
+                        await clearCart();
+                        await addToCart(itemId);
+                    }
+                } else {
+                    alert('Error adding to cart: ' + (data.message || 'Unknown error'));
+                }
+            }
+        } catch (e) {
+            logTerminal('Add to Cart Request Error', 'POST', '/api/cart/items', e.toString(), 500);
+        }
+    }
+
+    async function updateCartQuantity(itemId, newQty) {
+        const reqBody = { quantity: newQty };
+        logTerminal(`Sending update item quantity API request...`, 'PUT', `/api/cart/items/${itemId}`, reqBody);
+
+        try {
+            const res = await fetch(`/api/cart/items/${itemId}`, {
+                method: 'PUT',
+                headers: getHeaders(),
+                body: JSON.stringify(reqBody)
+            });
+            const data = await res.json();
+            logTerminal('Update item quantity response received', 'PUT', `/api/cart/items/${itemId}`, data, res.status);
+
+            if (res.ok && data.data) {
+                renderCart(data.data);
+            }
+        } catch (e) {
+            logTerminal('Update Cart Quantity Request Error', 'PUT', '', e.toString(), 500);
+        }
+    }
+
+    async function removeItem(itemId) {
+        logTerminal(`Sending remove item from cart API request...`, 'DELETE', `/api/cart/items/${itemId}`);
+
+        try {
+            const res = await fetch(`/api/cart/items/${itemId}`, {
+                method: 'DELETE',
+                headers: getHeaders()
+            });
+            const data = await res.json();
+            logTerminal('Remove item response received', 'DELETE', `/api/cart/items/${itemId}`, data, res.status);
+
+            if (res.ok && data.data) {
+                renderCart(data.data);
+            }
+        } catch (e) {
+            logTerminal('Remove Item Request Error', 'DELETE', '', e.toString(), 500);
+        }
+    }
+
+    async function clearCart() {
+        logTerminal('Sending clear cart API request...', 'DELETE', '/api/cart');
+
+        try {
+            const res = await fetch('/api/cart', {
+                method: 'DELETE',
+                headers: getHeaders()
+            });
+            const data = await res.json();
+            logTerminal('Clear cart response received', 'DELETE', '/api/cart', data, res.status);
+
+            if (res.ok) {
+                renderCart({ items: [], totalAmount: 0 });
+            }
+        } catch (e) {
+            logTerminal('Clear Cart Request Error', 'DELETE', '/api/cart', e.toString(), 500);
+        }
+    }
+
+    // Keyboard Command Palette ⌘K Implementation
+    function setupCommands() {
+        availableCommands = [
+            { id: 'view-cart', title: 'Get / View Current Cart Details', shortcut: '⌘ C', action: fetchCart },
+            { id: 'clear-cart', title: 'Delete / Clear Cart Sandbox', shortcut: '⌘ R', action: clearCart },
+            { id: 'seed-db', title: 'Seed Sandbox Database Menu (KFC)', shortcut: '⌘ S', action: seedDatabase },
+            { id: 'clear-terminal', title: 'Clear Visualizer Terminal Logs', shortcut: '⌘ L', action: clearTerminalLogs },
+            { id: 'auth-logout', title: 'Logout of Session', shortcut: '⌘ Q', action: logout }
+        ];
+    }
+
+    function setupKeyboardShortcuts() {
+        document.addEventListener('keydown', (e) => {
+            // Open Palette: Ctrl+K / Cmd+K
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                openCmdPalette();
+            }
+
+            // Global trigger bindings when logged in
+            if (currentUser) {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'c') { e.preventDefault(); fetchCart(); }
+                if ((e.ctrlKey || e.metaKey) && e.key === 'r') { e.preventDefault(); clearCart(); }
+                if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); seedDatabase(); }
+                if ((e.ctrlKey || e.metaKey) && e.key === 'l') { e.preventDefault(); clearTerminalLogs(); }
+                if ((e.ctrlKey || e.metaKey) && e.key === 'q') { e.preventDefault(); logout(); }
+            }
+        });
+    }
+
+    function openCmdPalette() {
+        const overlay = document.getElementById('cmdOverlay');
+        overlay.classList.add('active');
+        const input = document.getElementById('cmdInput');
+        input.value = '';
+        input.focus();
+        selectedCmdIndex = 0;
+        renderCommands(availableCommands);
+    }
+
+    function closeCmdPalette() {
+        const overlay = document.getElementById('cmdOverlay');
+        overlay.classList.remove('active');
+    }
+
+    function closeCmdPaletteOnBackdrop(e) {
+        if (e.target.id === 'cmdOverlay') {
+            closeCmdPalette();
+        }
+    }
+
+    function renderCommands(cmds) {
+        const container = document.getElementById('cmdList');
+        container.innerHTML = '';
+        
+        if (cmds.length === 0) {
+            container.innerHTML = `<div style="padding: 1rem; text-align: center; color: var(--color-muted); font-size: 0.9rem">No commands found</div>`;
+            return;
+        }
+
+        cmds.forEach((cmd, idx) => {
+            const item = document.createElement('div');
+            item.className = idx === selectedCmdIndex ? 'cmd-item selected' : 'cmd-item';
+            item.onclick = () => {
+                executeCommand(cmd);
+            };
+            item.innerHTML = `
+                <span class="cmd-item-title">${cmd.title}</span>
+                <span class="cmd-item-shortcut">${cmd.shortcut}</span>
+            `;
+            container.appendChild(item);
+        });
+    }
+
+    function filterCommands() {
+        const text = document.getElementById('cmdInput').value.toLowerCase();
+        const filtered = availableCommands.filter(c => c.title.toLowerCase().includes(text));
+        selectedCmdIndex = 0;
+        renderCommands(filtered);
+    }
+
+    function handleCmdKeydown(e) {
+        const text = document.getElementById('cmdInput').value.toLowerCase();
+        const filtered = availableCommands.filter(c => c.title.toLowerCase().includes(text));
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            selectedCmdIndex = (selectedCmdIndex + 1) % filtered.length;
+            renderCommands(filtered);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            selectedCmdIndex = (selectedCmdIndex - 1 + filtered.length) % filtered.length;
+            renderCommands(filtered);
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (filtered[selectedCmdIndex]) {
+                executeCommand(filtered[selectedCmdIndex]);
+            }
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            closeCmdPalette();
+        }
+    }
+
+    function executeCommand(cmd) {
+        closeCmdPalette();
+        cmd.action();
+    }
+</script>
+</body>
+</html>

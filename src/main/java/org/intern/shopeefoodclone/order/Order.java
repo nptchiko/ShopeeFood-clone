@@ -55,9 +55,6 @@ public class Order {
     @Column(name = "special_instructions", columnDefinition = "TEXT")
     String specialInstructions;
 
-    @Column(name = "promo_usage_id")
-    UUID promoUsageId;
-
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     List<OrderItem> items;
 

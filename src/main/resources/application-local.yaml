@@ -4,3 +4,6 @@ spring:
       on-profile: local
 
     import: optional:file:.env.local[.properties]
+
+  flyway:
+    enabled: off

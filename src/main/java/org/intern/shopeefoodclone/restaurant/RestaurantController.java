@@ -24,6 +24,7 @@ public class RestaurantController {
     RestaurantService restaurantService;
 
     @ResponseStatus(HttpStatus.CREATED)
+    @PostMapping
     public ApiResponse<RestaurantResponse> create(@Valid @RequestBody RestaurantCreateRequest request) {
         return ApiResponse.created(restaurantService.create(request), "Restaurant created successfully");
     }

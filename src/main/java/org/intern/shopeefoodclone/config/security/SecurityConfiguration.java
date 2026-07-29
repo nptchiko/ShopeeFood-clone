@@ -18,6 +18,10 @@ class SecurityConfiguration {
     private JwtService jwtService;
 
     private static final String[] WHITELIST = {
+            "/",
+            "/index.html",
+            "/images/**",
+            "/favicon.ico",
             "/swagger-ui/**",
             "/v3/api-docs/**",
             "/api/auth/login",
