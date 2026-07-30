@@ -43,6 +43,9 @@ public class KafkaTopicConfig {
     /** Fired when a user completes registration (for welcome emails, analytics, etc.). */
     public static final String TOPIC_USER_REGISTERED = "user.registered";
 
+    /** Fired when an order is placed. */
+    public static final String TOPIC_ORDER_PLACED = "order.placed";
+
     // ── Dead-letter topics (DLT) ────────────────────────────────────────────
 
     /** Receives messages that failed all retry attempts from OTP consumer. */
@@ -50,6 +53,9 @@ public class KafkaTopicConfig {
 
     /** Receives messages that failed all retry attempts from user.registered consumer. */
     public static final String TOPIC_USER_REGISTERED_DLT = "user.registered.DLT";
+
+    /** Receives messages that failed all retry attempts from order.placed consumer. */
+    public static final String TOPIC_ORDER_PLACED_DLT = "order.placed.DLT";
 
     // ── KafkaAdmin bean ─────────────────────────────────────────────────────
 
@@ -91,6 +97,22 @@ public class KafkaTopicConfig {
     @Bean
     public NewTopic userRegisteredDltTopic() {
         return TopicBuilder.name(TOPIC_USER_REGISTERED_DLT)
+                .partitions(1)
+                .replicas(1)
+                .build();
+    }
+
+    @Bean
+    public NewTopic orderPlacedTopic() {
+        return TopicBuilder.name(TOPIC_ORDER_PLACED)
+                .partitions(3)
+                .replicas(1)
+                .build();
+    }
+
+    @Bean
+    public NewTopic orderPlacedDltTopic() {
+        return TopicBuilder.name(TOPIC_ORDER_PLACED_DLT)
                 .partitions(1)
                 .replicas(1)
                 .build();
