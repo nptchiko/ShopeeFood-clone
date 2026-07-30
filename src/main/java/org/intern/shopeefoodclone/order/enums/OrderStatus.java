@@ -1,4 +1,4 @@
-package org.intern.shopeefoodclone.order;
+package org.intern.shopeefoodclone.order.enums;
 
 public enum OrderStatus {
     PENDING,

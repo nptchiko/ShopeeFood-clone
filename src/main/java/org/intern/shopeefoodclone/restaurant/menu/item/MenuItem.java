@@ -43,8 +43,9 @@ public class MenuItem {
     @Column(name = "image_url", columnDefinition = "TEXT")
     private String imageUrl;
 
+    @Builder.Default
     @Column(name = "is_available")
-    private Boolean isAvailable;
+    private Boolean isAvailable = Boolean.TRUE;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

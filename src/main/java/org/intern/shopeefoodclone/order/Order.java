@@ -6,6 +6,8 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.intern.shopeefoodclone.order.enums.DeliveryMethod;
+import org.intern.shopeefoodclone.order.enums.OrderStatus;
 import org.intern.shopeefoodclone.restaurant.Restaurant;
 import org.intern.shopeefoodclone.user.User;
 import org.intern.shopeefoodclone.user.address.Address;
