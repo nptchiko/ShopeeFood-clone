@@ -5,7 +5,6 @@ import jakarta.validation.constraints.NotNull;
 import org.intern.shopeefoodclone.order.enums.DeliveryMethod;
 import org.intern.shopeefoodclone.payment.PaymentMethodRequest;
 
-import java.util.List;
 import java.util.UUID;
 
 public record OrderCreateRequest(
@@ -21,8 +20,5 @@ public record OrderCreateRequest(
 
         @NotNull(message = "Payment method is required")
         @Valid
-        PaymentMethodRequest paymentMethod,
-
-        @Valid
-        List<OrderItemCreateRequest> items
+        PaymentMethodRequest paymentMethod
 ) {}

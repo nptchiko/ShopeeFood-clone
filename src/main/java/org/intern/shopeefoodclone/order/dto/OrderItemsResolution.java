@@ -7,6 +7,5 @@ import java.util.List;
 
 public record OrderItemsResolution(
     List<OrderItem> items,
-    BigDecimal subtotal,
-    boolean orderedFromCart
+    BigDecimal subtotal
 ) {}

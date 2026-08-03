@@ -81,17 +81,15 @@ public class OrderService {
             Address deliveryAddress = resolveDeliveryAddress(request, userId);
             BigDecimal deliveryFee = calculateDeliveryFee(request, deliveryAddress, restaurant);
 
-            OrderItemsResolution resolvedItems = resolveItems(request, restaurant, currentUserIdStr);
+            OrderItemsResolution resolvedItems = resolveItems(restaurant, currentUserIdStr);
 
             OrderPricing pricing = buildPricing(resolvedItems.subtotal(), deliveryFee);
 
             Order savedOrder = buildAndSaveOrder(user, restaurant, deliveryAddress, request, resolvedItems.items(), pricing);
 
-            //processPayment(savedOrder, request.paymentMethod(), pricing.getTotalAmount());
+            processPayment(savedOrder, request.paymentMethod(), pricing.getTotalAmount());
 
-            if (resolvedItems.orderedFromCart()) {
-                cartService.clearCart(currentUserIdStr);
-            }
+            cartService.clearCart(currentUserIdStr);
 
             kafkaEventPublisher.publishOrderPlaced(savedOrder);
 
@@ -170,42 +168,26 @@ public class OrderService {
         return BASE_DELIVERY_FEE;
     }
 
-    private OrderItemsResolution resolveItems(OrderCreateRequest request, Restaurant restaurant, String currentUserIdStr) {
+    private OrderItemsResolution resolveItems(Restaurant restaurant, String currentUserIdStr) {
         List<OrderItem> orderItems = new ArrayList<>();
         BigDecimal subtotal = BigDecimal.ZERO;
 
-        // #1 Collect order items from request
-        // OR
-        // #2 Convert from cart
-
-        if (request.items() != null && !request.items().isEmpty()) {
-            for (OrderItemCreateRequest itemReq : request.items()) {
-                MenuItem menuItem = getAndValidateMenuItem(itemReq.menuItemId(), restaurant);
-
-                // subtotal += price * quantity
-                subtotal = subtotal.add(menuItem.getPrice().multiply(BigDecimal.valueOf(itemReq.quantity())));
-
-                orderItems.add(buildOrderItem(menuItem, itemReq.quantity(), itemReq.specialNotes()));
-            }
-            return new OrderItemsResolution(orderItems, subtotal, false);
-        } else {
-            Cart cart = cartService.getCart(currentUserIdStr);
-            if (cart.items() == null || cart.items().isEmpty()) {
-                throw new AppException(ErrorCode.CART_IS_EMPTY);
-            }
-
-            if (cart.restaurantId() == null || !UUID.fromString(cart.restaurantId()).equals(restaurant.getId())) {
-                throw new AppException(ErrorCode.DIFFERENT_RESTAURANT_IN_CART);
-            }
-
-            for (CartItem cartItem : cart.items()) {
-                UUID itemId = UUID.fromString(cartItem.itemId());
-                MenuItem menuItem = getAndValidateMenuItem(itemId, restaurant);
-                subtotal = subtotal.add(menuItem.getPrice().multiply(BigDecimal.valueOf(cartItem.quantity())));
-                orderItems.add(buildOrderItem(menuItem, cartItem.quantity(), null));
-            }
-            return new OrderItemsResolution(orderItems, subtotal, true);
+        Cart cart = cartService.getCart(currentUserIdStr);
+        if (cart.items() == null || cart.items().isEmpty()) {
+            throw new AppException(ErrorCode.CART_IS_EMPTY);
         }
+
+        if (cart.restaurantId() == null || !UUID.fromString(cart.restaurantId()).equals(restaurant.getId())) {
+            throw new AppException(ErrorCode.DIFFERENT_RESTAURANT_IN_CART);
+        }
+
+        for (CartItem cartItem : cart.items()) {
+            UUID itemId = UUID.fromString(cartItem.itemId());
+            MenuItem menuItem = getAndValidateMenuItem(itemId, restaurant);
+            subtotal = subtotal.add(menuItem.getPrice().multiply(BigDecimal.valueOf(cartItem.quantity())));
+            orderItems.add(buildOrderItem(menuItem, cartItem.quantity(), null));
+        }
+        return new OrderItemsResolution(orderItems, subtotal);
     }
 
     private MenuItem getAndValidateMenuItem(UUID menuItemId, Restaurant restaurant) {

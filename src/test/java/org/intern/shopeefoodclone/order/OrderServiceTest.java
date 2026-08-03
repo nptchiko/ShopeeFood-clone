@@ -3,8 +3,9 @@ package org.intern.shopeefoodclone.order;
 import org.intern.shopeefoodclone.cart.CartService;
 import org.intern.shopeefoodclone.infras.cache.CacheService;
 import org.intern.shopeefoodclone.infras.messaging.KafkaEventPublisher;
+import org.intern.shopeefoodclone.cart.Cart;
+import org.intern.shopeefoodclone.cart.CartItem;
 import org.intern.shopeefoodclone.order.dto.OrderCreateRequest;
-import org.intern.shopeefoodclone.order.dto.OrderItemCreateRequest;
 import org.intern.shopeefoodclone.order.dto.OrderResponse;
 import org.intern.shopeefoodclone.order.enums.DeliveryMethod;
 import org.intern.shopeefoodclone.payment.PaymenMethodType;
@@ -116,8 +117,7 @@ class OrderServiceTest {
                 .build();
 
         PaymentMethodRequest paymentMethodRequest = new PaymentMethodRequest(PaymenMethodType.COD, null, null);
-        OrderItemCreateRequest itemReq = new OrderItemCreateRequest(menuItemId, 2, "No onions");
-        createRequest = new OrderCreateRequest(restaurantId, addressId, DeliveryMethod.DELIVERY, "Instructions", paymentMethodRequest, List.of(itemReq));
+        createRequest = new OrderCreateRequest(restaurantId, addressId, DeliveryMethod.DELIVERY, "Instructions", paymentMethodRequest);
 
         // Setup security context mock for SecurityUtils
         SecurityContext securityContext = mock(SecurityContext.class);
@@ -133,6 +133,20 @@ class OrderServiceTest {
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(restaurantRepository.findById(restaurantId)).thenReturn(Optional.of(restaurant));
         when(addressRepository.findById(addressId)).thenReturn(Optional.of(address));
+
+        CartItem cartItem = CartItem.builder()
+                .itemId(menuItemId.toString())
+                .itemName("Pizza")
+                .quantity(2)
+                .price(BigDecimal.valueOf(100000.00))
+                .build();
+        Cart cart = Cart.builder()
+                .cartId(userId.toString())
+                .restaurantId(restaurantId.toString())
+                .items(List.of(cartItem))
+                .build();
+        when(cartService.getCart(userId.toString())).thenReturn(cart);
+
         when(menuItemRepository.findById(menuItemId)).thenReturn(Optional.of(menuItem));
 
         Order order = Order.builder().id(UUID.randomUUID()).user(user).restaurant(restaurant).build();
@@ -173,6 +187,20 @@ class OrderServiceTest {
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(restaurantRepository.findById(restaurantId)).thenReturn(Optional.of(restaurant));
         when(addressRepository.findById(addressId)).thenReturn(Optional.of(address));
+
+        CartItem cartItem = CartItem.builder()
+                .itemId(menuItemId.toString())
+                .itemName("Pizza")
+                .quantity(2)
+                .price(BigDecimal.valueOf(100000.00))
+                .build();
+        Cart cart = Cart.builder()
+                .cartId(userId.toString())
+                .restaurantId(restaurantId.toString())
+                .items(List.of(cartItem))
+                .build();
+        when(cartService.getCart(userId.toString())).thenReturn(cart);
+
         when(menuItemRepository.findById(menuItemId)).thenReturn(Optional.of(menuItem));
 
         AppException ex = assertThrows(AppException.class, () -> orderService.create(createRequest));
