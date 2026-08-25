@@ -251,7 +251,7 @@ public class OrderService {
     private void processPayment(Order savedOrder, org.intern.shopeefoodclone.payment.PaymentMethodRequest paymentRequest, BigDecimal totalAmount) {
         PaymentMethod paymentMethod = PaymentMethod.builder()
                 .type(paymentRequest.type())
-                .partyName(paymentRequest.partyName())
+                .provider(paymentRequest.provider())
                 .gatewayToken(paymentRequest.gatewayToken())
                 .build();
 
@@ -287,16 +287,12 @@ public class OrderService {
 
     @Transactional(readOnly = true)
     public OrderResponse getById(UUID id) {
-        return orderMapper.toResponse(findOrThrow(id));
+        return orderMapper.toResponse(getOrder(id));
     }
 
     @Transactional
     public OrderResponse update(UUID id, OrderUpdateRequest request) {
-        Order order = findOrThrow(id);
-
-        if (request.status() == OrderStatus.CANCELLED && order.getStatus() != OrderStatus.CANCELLED) {
-                throw new AppException(ErrorCode.CANNOT_CANCEL_ORDER);
-        }
+        Order order = getOrder(id);
 
         order.setStatus(request.status());
 
@@ -315,11 +311,38 @@ public class OrderService {
 
     @Transactional
     public void delete(UUID id) {
-        Order order = findOrThrow(id);
+        Order order = getOrder(id);
         orderRepository.delete(order);
     }
 
-    private Order findOrThrow(UUID id) {
+
+    @Transactional
+    public void cancelOrder(UUID id) {
+        Order order = getOrder(id);
+
+        if (!isCancelable(order))
+            throw new AppException(ErrorCode.CANNOT_CANCEL_ORDER,
+                    "Order cannot be cancelled in state: " + order.getStatus().toString());
+
+        if (isRefundable(order)) {
+            // refund flow
+        }
+
+        order.setStatus(OrderStatus.CANCELLED);
+        Order savedOrder = orderRepository.save(order);
+
+        kafkaEventPublisher.publishOrderCancelled(savedOrder);
+    }
+
+    public PageResponse<OrderResponse> getOrderHistory(String userId, String filter, Pageable pageable) {
+        Pageable boundedPageable = PaginationUtils.validateAndBound(pageable);
+        Page<Order> page = StringUtils.hasText(filter)
+                ? orderRepository.findAllByUserId(UUID.fromString(userId), RSQLJPASupport.toSpecification(filter), boundedPageable)
+                : orderRepository.findAllByUserId(UUID.fromString(userId), boundedPageable);
+        return PaginationUtils.toPageResponse(page, orderMapper::toResponse);
+    }
+
+    private Order getOrder(UUID id) {
         return orderRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND, "Order not found with id: " + id));
     }
@@ -337,5 +360,27 @@ public class OrderService {
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         return earthRadius * c;
     }
+
+    private boolean isCancelable(Order order) {
+        if (order.getStatus() == null)
+            throw new AppException(ErrorCode.INVALID_ORDER_STATUS, "Order with id=["+order.getId().toString()+"] does not have valid status" );
+
+        OrderStatus status = order.getStatus();
+
+        if (status == OrderStatus.CANCELLED)
+            throw new AppException(ErrorCode.INVALID_INPUT, "Order is already cancelled");
+
+        return status != OrderStatus.DELIVERED &&
+               status != OrderStatus.PICKED_UP &&
+               status != OrderStatus.READY;
+    }
+
+    private boolean isRefundable(Order order) {
+        // TODO: wait for payment flow implementation
+        return true;
+    }
+
+
+
 }
 

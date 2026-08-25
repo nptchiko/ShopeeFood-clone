@@ -46,6 +46,8 @@ public class KafkaTopicConfig {
     /** Fired when an order is placed. */
     public static final String TOPIC_ORDER_PLACED = "order.placed";
 
+    /** Fired when an order is cancelled */
+    public static final String TOPIC_ORDER_CANCELLED = "order.cancelled";
     // ── Dead-letter topics (DLT) ────────────────────────────────────────────
 
     /** Receives messages that failed all retry attempts from OTP consumer. */
@@ -114,6 +116,14 @@ public class KafkaTopicConfig {
     public NewTopic orderPlacedDltTopic() {
         return TopicBuilder.name(TOPIC_ORDER_PLACED_DLT)
                 .partitions(1)
+                .replicas(1)
+                .build();
+    }
+
+    @Bean
+    public NewTopic orderCancelledTopic() {
+        return TopicBuilder.name(TOPIC_ORDER_CANCELLED)
+                .partitions(3)
                 .replicas(1)
                 .build();
     }

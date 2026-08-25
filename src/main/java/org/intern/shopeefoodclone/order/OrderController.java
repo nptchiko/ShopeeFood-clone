@@ -8,6 +8,7 @@ import org.intern.shopeefoodclone.order.dto.OrderResponse;
 import org.intern.shopeefoodclone.order.dto.OrderUpdateRequest;
 import org.intern.shopeefoodclone.shared.api.ApiResponse;
 import org.intern.shopeefoodclone.shared.api.PageResponse;
+import org.intern.shopeefoodclone.shared.utils.SecurityUtils;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
@@ -36,6 +37,22 @@ public class OrderController {
         return ApiResponse.success(orderService.findAll(filter, pageable), "Orders retrieved successfully");
     }
 
+    @PutMapping("/{id}/cancel")
+    public ApiResponse<Void> cancelOrder(@PathVariable UUID id){
+        orderService.cancelOrder(id);
+        return ApiResponse.success("Order cancelled successfully");
+    }
+
+    @GetMapping("/history")
+    public ApiResponse<PageResponse<OrderResponse>> getHistory(
+            @PageableDefault(sort = "createdAt") Pageable pageable,
+            @RequestParam(required = false) String filter
+    ) {
+        String userId = SecurityUtils.getCurrentUserId();
+        return ApiResponse.success(orderService.getOrderHistory(userId, filter, pageable));
+    }
+
+    // BASIC CRUD
     @GetMapping("/{id}")
     public ApiResponse<OrderResponse> getById(@PathVariable UUID id) {
         return ApiResponse.success(orderService.getById(id), "Order retrieved successfully");

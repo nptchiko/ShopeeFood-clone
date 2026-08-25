@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.intern.shopeefoodclone.config.kafka.KafkaTopicConfig;
 import org.intern.shopeefoodclone.events.OtpVerificationRequestedEvent;
 import org.intern.shopeefoodclone.events.UserRegisteredEvent;
+import org.intern.shopeefoodclone.events.OrderCancelledEvent;
 import org.intern.shopeefoodclone.events.OrderPlacedEvent;
 import org.intern.shopeefoodclone.order.Order;
 import org.intern.shopeefoodclone.shared.constant.AppDate;
@@ -150,5 +151,42 @@ public class KafkaEventPublisher {
                         result.getRecordMetadata().offset());
             }
         });
+    }
+
+    /**
+     * Publishes an {@link OrderCancelledEvent} to the Kafka topic.
+     * Called by {@code OrderService} after an order is successfully cancelled.
+     *
+     * @param order the cancelled {@link Order} entity
+     */
+    public void publishOrderCancelled(Order order) {
+        UUID correlationId = UUID.randomUUID();
+
+        OrderCancelledEvent event = OrderCancelledEvent.builder()
+                .correlationId(correlationId)
+                .orderId(order.getId())
+                .userId(order.getUser().getId())
+                .restaurantId(order.getRestaurant().getId())
+                .cancelledAt(AppDate.now())
+                .build();
+
+        log.info("[Kafka] Publishing OrderCancelledEvent | correlationId={} | orderId={} | userId={}",
+                correlationId, order.getId(), order.getUser().getId());
+
+        CompletableFuture<SendResult<String, Object>> future =
+                kafkaTemplate.send(KafkaTopicConfig.TOPIC_ORDER_CANCELLED, order.getUser().getId().toString(), event);
+
+        future.whenComplete((result, ex) -> {
+            if (ex != null) {
+                log.error("[Kafka] FAILED to publish OrderCancelledEvent | correlationId={} | orderId={} | error={}",
+                        correlationId, order.getId(), ex.getMessage(), ex);
+            } else {
+                log.debug("[Kafka] OrderCancelledEvent sent | correlationId={} | partition={} | offset={}",
+                        correlationId,
+                        result.getRecordMetadata().partition(),
+                        result.getRecordMetadata().offset());
+            }
+        });
+
     }
 }

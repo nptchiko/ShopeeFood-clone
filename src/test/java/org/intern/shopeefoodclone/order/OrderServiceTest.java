@@ -8,7 +8,8 @@ import org.intern.shopeefoodclone.cart.CartItem;
 import org.intern.shopeefoodclone.order.dto.OrderCreateRequest;
 import org.intern.shopeefoodclone.order.dto.OrderResponse;
 import org.intern.shopeefoodclone.order.enums.DeliveryMethod;
-import org.intern.shopeefoodclone.payment.PaymenMethodType;
+import org.intern.shopeefoodclone.order.enums.OrderStatus;
+import org.intern.shopeefoodclone.payment.PaymentMethodType;
 import org.intern.shopeefoodclone.payment.PaymentMethodRequest;
 import org.intern.shopeefoodclone.payment.PaymentRepository;
 import org.intern.shopeefoodclone.restaurant.Restaurant;
@@ -116,14 +117,14 @@ class OrderServiceTest {
                 .isAvailable(true)
                 .build();
 
-        PaymentMethodRequest paymentMethodRequest = new PaymentMethodRequest(PaymenMethodType.COD, null, null);
+        PaymentMethodRequest paymentMethodRequest = new PaymentMethodRequest(PaymentMethodType.COD, null, null);
         createRequest = new OrderCreateRequest(restaurantId, addressId, DeliveryMethod.DELIVERY, "Instructions", paymentMethodRequest);
 
         // Setup security context mock for SecurityUtils
         SecurityContext securityContext = mock(SecurityContext.class);
         Authentication authentication = mock(Authentication.class);
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-        when(authentication.getPrincipal()).thenReturn(userId.toString());
+        lenient().when(securityContext.getAuthentication()).thenReturn(authentication);
+        lenient().when(authentication.getPrincipal()).thenReturn(userId.toString());
         SecurityContextHolder.setContext(securityContext);
     }
 
@@ -206,5 +207,57 @@ class OrderServiceTest {
         AppException ex = assertThrows(AppException.class, () -> orderService.create(createRequest));
         assertEquals(ErrorCode.OUT_OF_STOCK, ex.getErrorCode());
         verify(orderRepository, never()).save(any());
+    }
+
+    @Test
+    void testCancelOrder_Success() {
+        UUID orderId = UUID.randomUUID();
+        Order order = Order.builder()
+                .id(orderId)
+                .user(user)
+                .restaurant(restaurant)
+                .status(OrderStatus.PENDING)
+                .build();
+
+        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+        when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        orderService.cancelOrder(orderId);
+
+        assertEquals(OrderStatus.CANCELLED, order.getStatus());
+        verify(orderRepository).save(order);
+        verify(kafkaEventPublisher).publishOrderCancelled(order);
+    }
+
+    @Test
+    void testCancelOrder_AlreadyCancelled() {
+        UUID orderId = UUID.randomUUID();
+        Order order = Order.builder()
+                .id(orderId)
+                .status(OrderStatus.CANCELLED)
+                .build();
+
+        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+
+        AppException ex = assertThrows(AppException.class, () -> orderService.cancelOrder(orderId));
+        assertEquals(ErrorCode.INVALID_INPUT, ex.getErrorCode());
+        verify(orderRepository, never()).save(any());
+        verify(kafkaEventPublisher, never()).publishOrderCancelled(any());
+    }
+
+    @Test
+    void testCancelOrder_CannotCancel() {
+        UUID orderId = UUID.randomUUID();
+        Order order = Order.builder()
+                .id(orderId)
+                .status(OrderStatus.DELIVERED)
+                .build();
+
+        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+
+        AppException ex = assertThrows(AppException.class, () -> orderService.cancelOrder(orderId));
+        assertEquals(ErrorCode.CANNOT_CANCEL_ORDER, ex.getErrorCode());
+        verify(orderRepository, never()).save(any());
+        verify(kafkaEventPublisher, never()).publishOrderCancelled(any());
     }
 }
