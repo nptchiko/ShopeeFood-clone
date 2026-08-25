@@ -19,12 +19,12 @@ public class PaymentMethod {
     @Enumerated(EnumType.STRING)
     @Builder.Default
     @Column(name = "method_type", length = 30)
-    PaymenMethodType type = PaymenMethodType.COD;
+    PaymentMethodType type = PaymentMethodType.COD;
 
     @Column(name = "gateway_token")
     String gatewayToken;
 
-    @Column(name = "provider")
+    @Column(name = "payment_provider")
     PaymentGatewayProvider provider;
 
 }
