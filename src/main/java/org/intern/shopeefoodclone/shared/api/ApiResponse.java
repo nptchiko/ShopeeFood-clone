@@ -27,6 +27,13 @@ public record ApiResponse<T>(
                 .build();
     }
 
+    public static <T> ApiResponse<T> success(T data) {
+        return ApiResponse.<T>builder()
+                .status(200)
+                .data(data)
+                .build();
+    }
+
     public static <T> ApiResponse<T> created(T data, String message) {
         return ApiResponse.<T>builder()
                 .data(data)
