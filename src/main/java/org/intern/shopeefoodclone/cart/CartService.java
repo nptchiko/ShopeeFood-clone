@@ -37,6 +37,10 @@ public class CartService {
     }
 
     public Cart addItemToCart(String userId, CartItemRequest request) {
+
+        if (request.quantity() <= 0 || request.quantity() > 100)
+            throw new AppException(ErrorCode.INVALID_INPUT, "Cart item's quantity is not valid");
+
         Cart cart = getCart(userId);
 
         UUID itemId = UUID.fromString(request.itemId());
@@ -102,6 +106,10 @@ public class CartService {
     }
 
     public Cart updateItemQuantity(String userId, String itemId, CartItemUpdateRequest request) {
+
+        if (request.quantity() < 0 || request.quantity() > 100)
+            throw new AppException(ErrorCode.INVALID_INPUT, "Cart item's quantity is not valid");
+
         Cart cart = getCart(userId);
 
         List<CartItem> updatedItems = new ArrayList<>();
@@ -231,5 +239,9 @@ public class CartService {
                 .items(new ArrayList<>())
                 .totalAmount(BigDecimal.ZERO)
                 .build();
+    }
+
+    private void validateCart() {
+
     }
 }
