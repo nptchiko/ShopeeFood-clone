@@ -20,6 +20,10 @@ public class RedisCacheService implements CacheService {
         redisTemplate.opsForValue().set(key, value, Duration.ofSeconds(durationSeconds));
     }
 
+    public void expire(String key, Duration TTL){
+        redisTemplate.expire(key, TTL);
+    }
+
     @Override
     public String get(String key) {
         return redisTemplate.opsForValue().get(key);
